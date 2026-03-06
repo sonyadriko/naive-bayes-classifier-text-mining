@@ -204,7 +204,7 @@
                         </span>
                     </div>
                     <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">
-                        Selamat Datang, {{ user.name if user else 'User' }}!
+                        Selamat Datang, <span id="welcome-user-name">User</span>!
                     </h1>
                     <p class="text-white/80 text-lg max-w-2xl">
                         Sistem Deteksi Tingkat Kepuasan Pengguna Access by KAI menggunakan Naive Bayes Classifier
@@ -414,7 +414,7 @@
 
     async function loadStats() {
         try {
-            const response = await apiCall('/data/info');
+            const response = await apiCall('/data/info', { silentError: true });
             if (response.success) {
                 animateCounter('total-data', response.data.total_rows || 0, 1500);
                 animateCounter('total-features', response.data.total_features || 0, 1200);
@@ -430,6 +430,20 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Update auth UI (in case base.html hasn't updated yet)
+        if (typeof updateAuthUI === 'function') {
+            updateAuthUI();
+        }
+
+        // Update welcome message with user name from localStorage
+        const user = getUser();
+        if (user && user.name) {
+            const userNameEl = document.getElementById('welcome-user-name');
+            if (userNameEl) {
+                userNameEl.textContent = user.name;
+            }
+        }
+
         // Small delay for animation effect
         setTimeout(loadStats, 300);
     });

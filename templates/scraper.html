@@ -118,30 +118,6 @@
         background: #e2e8f0;
     }
 
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    .status-badge.success {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .status-badge.error {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .status-badge.warning {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
     .stat-card {
         background: #f8fafc;
         border-radius: 0.75rem;
@@ -158,30 +134,6 @@
     .stat-label {
         font-size: 0.875rem;
         color: #64748b;
-    }
-
-    .dependency-item {
-        display: flex;
-        align-items: center;
-        padding: 0.75rem;
-        background: #f8fafc;
-        border-radius: 0.5rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .dependency-status {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-right: 0.75rem;
-    }
-
-    .dependency-status.installed {
-        background: #10b981;
-    }
-
-    .dependency-status.missing {
-        background: #ef4444;
     }
 
     .spinner {
@@ -209,6 +161,10 @@
         margin: 0;
         font-size: 0.875rem;
         color: #166534;
+    }
+
+    .hidden {
+        display: none;
     }
 </style>
 {% endblock %}
@@ -265,7 +221,6 @@
                             <option value="newest">Terbaru</option>
                             <option value="rating">Rating Tertinggi</option>
                             <option value="relevance">Relevansi</option>
-                            <option value="helpful">Paling Membantu</option>
                         </select>
                     </div>
 
@@ -278,22 +233,23 @@
                             <span id="scrape-btn-text">Mulai Scraping</span>
                             <div id="scrape-spinner" class="spinner hidden ml-2"></div>
                         </button>
-                        <button type="button" onclick="checkStatus()" class="btn-secondary">
-                            Cek Status
-                        </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Dependency Check -->
-            <div class="card fade-in-up">
-                <h2 class="text-lg font-bold text-slate-900 mb-4">Status Dependensi</h2>
-                <div id="dependency-status">
-                    <p class="text-slate-500 text-sm">Memeriksa dependensi...</p>
-                </div>
-                <div id="install-dependency-btn" class="mt-4 hidden">
-                    <button type="button" onclick="installDependency()" class="btn-primary">
-                        Install google-play-scraper
+            <!-- Success Message -->
+            <div id="success-message" class="card fade-in-up hidden">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+                    <svg class="mx-auto h-12 w-12 text-emerald-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="text-lg font-semibold text-emerald-800 mb-2">Scraping Berhasil!</h3>
+                    <p id="success-details" class="text-emerald-600 text-sm mb-4"></p>
+                    <button onclick="window.location.href='/data'" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Lihat Data Training
                     </button>
                 </div>
             </div>
@@ -314,7 +270,7 @@
                 <h2 class="text-lg font-bold text-slate-900 mb-4">Aksi Cepat</h2>
                 <div class="space-y-3">
                     <button onclick="window.location.href='/data'" class="w-full btn-secondary text-left flex items-center justify-between">
-                        <span>Upload Data Training</span>
+                        <span>Lihat Data Training</span>
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
@@ -338,7 +294,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js -->
+{% block extra_js %}
 <script>
     function updateRangeValue(slider) {
         document.getElementById(slider.id + '-value').textContent = slider.value;
@@ -380,7 +336,13 @@
             });
 
             if (response.success) {
-                showToast(`Berhasil mengambil ${response.data.scraped} review!`, 'success');
+                // Show success message
+                const successDiv = document.getElementById('success-message');
+                const details = document.getElementById('success-details');
+                details.textContent = `Berhasil mengambil ${response.data.scraped} review!`;
+                successDiv.classList.remove('hidden');
+
+                // Update status panel
                 checkStatus();
             }
         } catch (error) {
@@ -393,7 +355,8 @@
     async function checkStatus() {
         try {
             const response = await apiCall('/scraper/status', {
-                method: 'GET'
+                method: 'GET',
+                silentError: true
             });
 
             if (response.success) {
@@ -441,96 +404,15 @@
                         <p class="stat-label">Negatif</p>
                     </div>
                 </div>
-                ${data.last_modified ? `
-                    <p class="text-xs text-slate-400 text-center">
-                        Terakhir update: ${new Date(data.last_modified).toLocaleString('id-ID')}
-                    </p>
-                ` : ''}
+                <a href="/data" class="block text-center text-emerald-600 hover:text-emerald-700 text-sm font-medium mt-4">
+                    Lihat Semua Data →
+                </a>
             </div>
         `;
     }
 
-    async function checkDependencies() {
-        try {
-            const response = await apiCall('/scraper/dependencies', {
-                method: 'GET'
-            });
-
-            if (response.success) {
-                displayDependencies(response.data);
-            }
-        } catch (error) {
-            document.getElementById('dependency-status').innerHTML = `
-                <p class="text-red-500 text-sm">Gagal memeriksa dependensi</p>
-            `;
-        }
-    }
-
-    function displayDependencies(data) {
-        const statusDiv = document.getElementById('dependency-status');
-        const installBtn = document.getElementById('install-dependency-btn');
-
-        let html = '';
-
-        // Node.js
-        html += `
-            <div class="dependency-item">
-                <span class="dependency-status ${data.has_node ? 'installed' : 'missing'}"></span>
-                <span class="flex-1">
-                    <strong>Node.js</strong>
-                    ${data.node_version ? `<span class="text-slate-500 text-sm ml-2">${data.node_version}</span>` : ''}
-                </span>
-                <span class="status-badge ${data.has_node ? 'success' : 'error'}">
-                    ${data.has_node ? 'Terinstall' : 'Tidak terinstall'}
-                </span>
-            </div>
-        `;
-
-        // google-play-scraper
-        html += `
-            <div class="dependency-item">
-                <span class="dependency-status ${data.has_scraper ? 'installed' : 'missing'}"></span>
-                <span class="flex-1"><strong>google-play-scraper</strong></span>
-                <span class="status-badge ${data.has_scraper ? 'success' : 'error'}">
-                    ${data.has_scraper ? 'Terinstall' : 'Tidak terinstall'}
-                </span>
-            </div>
-        `;
-
-        statusDiv.innerHTML = html;
-
-        // Show install button if scraper not installed
-        if (data.has_node && !data.has_scraper) {
-            installBtn.classList.remove('hidden');
-        } else {
-            installBtn.classList.add('hidden');
-        }
-    }
-
-    async function installDependency() {
-        const btn = document.getElementById('install-dependency-btn').querySelector('button');
-        const originalText = btn.textContent;
-        btn.textContent = 'Installing...';
-        btn.disabled = true;
-
-        try {
-            const response = await apiCall('/scraper/install', {
-                method: 'POST'
-            });
-
-            if (response.success) {
-                showToast('google-play-scraper berhasil diinstall!', 'success');
-                checkDependencies();
-            }
-        } catch (error) {
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
-    }
-
-    // Check dependencies and status on page load
+    // Check status on page load
     document.addEventListener('DOMContentLoaded', () => {
-        checkDependencies();
         checkStatus();
     });
 </script>

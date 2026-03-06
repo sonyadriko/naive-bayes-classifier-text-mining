@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Data Survey - Deteksi Kepuasan Pengguna KAI{% endblock %}
+{% block title %}Data Training - Analisis Sentimen KAI Access{% endblock %}
 
 {% block extra_css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.tailwind.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.tailwind.min.css">
 <style>
     /* Upload Zone */
     .upload-zone {
@@ -128,39 +131,6 @@
         background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
     }
 
-    /* Pagination */
-    .pagination {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1.5rem;
-        background: #f8fafc;
-        border-top: 1px solid #e2e8f0;
-    }
-
-    .page-btn {
-        padding: 0.5rem 1rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.5rem;
-        background: white;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #475569;
-        transition: all 0.2s ease;
-        cursor: pointer;
-    }
-
-    .page-btn:hover:not(:disabled) {
-        border-color: #10b981;
-        color: #10b981;
-        background: #ecfdf5;
-    }
-
-    .page-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
     /* Info Stats */
     .info-stat {
         display: flex;
@@ -204,6 +174,127 @@
     .empty-state-icon svg {
         color: #cbd5e1;
     }
+
+    /* DataTables Custom Styles */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .dataTables_wrapper .dataTables_length {
+        justify-content: flex-start;
+    }
+
+    .dataTables_wrapper .dataTables_filter {
+        justify-content: flex-end;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        outline: none;
+    }
+
+    .dataTables_wrapper .dataTables_length select {
+        margin: 0 0.5rem;
+        padding: 0.5rem 2rem 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        padding: 1rem 1.5rem;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        background: white;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        min-width: 2.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        border-color: #10b981;
+        color: #10b981;
+        background: #ecfdf5;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-color: #10b981;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+        background: white;
+        color: #475569;
+        border-color: #e2e8f0;
+    }
+
+    /* Sorting icons */
+    .dataTables_wrapper .dataTables_th {
+        position: relative;
+        cursor: pointer;
+    }
+
+    .dataTables_wrapper .dataTables_th.sorting::after,
+    .dataTables_wrapper .dataTables_th.sorting_asc::after,
+    .dataTables_wrapper .dataTables_th.sorting_desc::after {
+        position: absolute;
+        right: 0.75rem;
+        opacity: 0.5;
+    }
+
+    /* Responsive DataTable */
+    table.dataTable {
+        width: 100% !important;
+    }
+
+    table.dataTable thead th {
+        position: relative;
+    }
+
+    table.dataTable thead th.sorting:after,
+    table.dataTable thead th.sorting_asc:after,
+    table.dataTable thead th.sorting_desc:after {
+        right: 0.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -212,8 +303,8 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 fade-in-up">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900">Data Survey</h1>
-            <p class="text-slate-500 mt-2">Upload dan kelola data survey kepuasan pengguna</p>
+            <h1 class="text-3xl font-bold text-slate-900">Data Training</h1>
+            <p class="text-slate-500 mt-2">Upload dan kelola data training untuk analisis sentimen</p>
         </div>
         <button
             onclick="loadData()"
@@ -249,15 +340,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                         </div>
-                        <p class="text-slate-700 font-medium mb-1">Klik atau drag file Excel</p>
-                        <p class="text-slate-400 text-sm">Format: .xlsx atau .xls</p>
+                        <p class="text-slate-700 font-medium mb-1">Klik atau drag file data</p>
+                        <p class="text-slate-400 text-sm">Format: .csv, .xlsx, atau .xls</p>
                     </div>
                 </div>
 
                 <input
                     type="file"
                     id="file-input"
-                    accept=".xlsx,.xls"
+                    accept=".csv,.xlsx,.xls"
                     class="hidden"
                     onchange="handleFileSelect(event)">
 
@@ -313,20 +404,16 @@
                     </h3>
                     <div class="bg-slate-50 rounded-xl p-4">
                         <div class="info-stat">
-                            <span class="info-stat-label">Total Baris</span>
+                            <span class="info-stat-label">Total Data</span>
                             <span id="info-rows" class="info-stat-value">-</span>
                         </div>
                         <div class="info-stat">
-                            <span class="info-stat-label">Total Kolom</span>
+                            <span class="info-stat-label">Kolom</span>
                             <span id="info-cols" class="info-stat-value">-</span>
                         </div>
                         <div class="info-stat">
-                            <span class="info-stat-label">Fitur</span>
-                            <span id="info-features" class="info-stat-value">-</span>
-                        </div>
-                        <div class="info-stat">
-                            <span class="info-stat-label">Kelas</span>
-                            <span id="info-classes" class="info-stat-value">-</span>
+                            <span class="info-stat-label">Distribusi Sentimen</span>
+                            <span id="info-sentiment" class="info-stat-value">-</span>
                         </div>
                     </div>
                 </div>
@@ -343,7 +430,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
                         </span>
-                        Data Survey
+                        Data Training
                     </h3>
                 </div>
 
@@ -355,12 +442,12 @@
                         </svg>
                     </div>
                     <h3 class="text-lg font-semibold text-slate-700 mb-2">Belum Ada Data</h3>
-                    <p class="text-slate-500 text-sm">Upload file Excel untuk menampilkan data training</p>
+                    <p class="text-slate-500 text-sm">Upload file CSV/Excel untuk menampilkan data training</p>
                 </div>
 
                 <!-- Table -->
-                <div id="data-table-container" class="hidden overflow-x-auto">
-                    <table class="data-table">
+                <div id="data-table-container" class="hidden">
+                    <table id="data-table" class="data-table display responsive nowrap" style="width:100%">
                         <thead id="table-head">
                             <!-- Headers will be inserted here -->
                         </thead>
@@ -368,23 +455,6 @@
                             <!-- Data rows will be inserted here -->
                         </tbody>
                     </table>
-
-                    <!-- Pagination -->
-                    <div class="pagination">
-                        <p id="pagination-info" class="text-sm text-slate-500"></p>
-                        <div class="flex gap-2">
-                            <button id="prev-btn" onclick="changePage(-1)" class="page-btn">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                            <button id="next-btn" onclick="changePage(1)" class="page-btn">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -393,11 +463,15 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- jQuery (required for DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <script>
     let selectedFile = null;
+    let dataTable = null;
     let currentData = [];
-    let currentPage = 1;
-    const rowsPerPage = 10;
 
     // Drag and drop handlers
     const dropZone = document.getElementById('drop-zone');
@@ -428,11 +502,11 @@
     }
 
     function handleFile(file) {
-        const validExtensions = ['.xlsx', '.xls'];
+        const validExtensions = ['.csv', '.xlsx', '.xls'];
         const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
 
         if (!validExtensions.includes(fileExtension)) {
-            showToast('Format file harus .xlsx atau .xls', 'error');
+            showToast('Format file harus .csv, .xlsx, atau .xls', 'error');
             return;
         }
 
@@ -499,7 +573,7 @@
 
     async function loadData() {
         try {
-            const response = await apiCall('/data/read');
+            const response = await apiCall('/data/read', { silentError: true });
             if (response.success) {
                 currentData = response.data.rows;
                 displayData();
@@ -522,66 +596,111 @@
         emptyState.classList.add('hidden');
         tableContainer.classList.remove('hidden');
 
+        // Destroy existing DataTable if it exists
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+
         const headers = Object.keys(currentData[0]);
         const tableHead = document.getElementById('table-head');
+        const tableBody = document.getElementById('table-body');
+
+        // Build table headers
         tableHead.innerHTML = `
             <tr>
-                <th class="w-16">#</th>
-                ${headers.map(h => `<th>${h}</th>`).join('')}
+                <th class="w-16">No</th>
+                ${headers.map(h => `<th>${formatHeader(h)}</th>`).join('')}
             </tr>
         `;
 
-        renderTableRows();
-    }
-
-    function renderTableRows() {
-        const tableBody = document.getElementById('table-body');
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const pageData = currentData.slice(start, end);
-        const headers = Object.keys(currentData[0]);
-
-        tableBody.innerHTML = pageData.map((row, idx) => `
+        // Build table body
+        tableBody.innerHTML = currentData.map((row, idx) => `
             <tr>
-                <td class="font-medium text-slate-500">${start + idx + 1}</td>
-                ${headers.map(h => `<td>${row[h] ?? '-'}</td>`).join('')}
+                <td class="font-medium text-slate-500">${idx + 1}</td>
+                ${headers.map(h => {
+                    const val = row[h];
+                    // Handle sentiment column with color badge
+                    if (h.toLowerCase() === 'sentiment') {
+                        const badgeClass = val === 'Positif' ? 'bg-emerald-100 text-emerald-700' :
+                                          val === 'Negatif' ? 'bg-red-100 text-red-700' :
+                                          'bg-gray-100 text-gray-700';
+                        return `<td><span class="px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">${val ?? '-'}</span></td>`;
+                    }
+                    // Handle score column with stars
+                    if (h.toLowerCase() === 'score') {
+                        const stars = val ? '★'.repeat(Math.min(5, Math.max(1, Math.round(val)))) + '☆'.repeat(5 - Math.min(5, Math.max(1, Math.round(val)))) : '-';
+                        return `<td><span class="text-yellow-500">${stars}</span></td>`;
+                    }
+                    // Truncate long text
+                    const displayVal = val && typeof val === 'string' && val.length > 100
+                        ? val.substring(0, 100) + '...'
+                        : (val ?? '-');
+                    return `<td title="${val ?? ''}">${displayVal}</td>`;
+                }).join('')}
             </tr>
         `).join('');
 
-        updatePagination();
+        // Initialize DataTable
+        setTimeout(initDataTable, 100);
     }
 
-    function updatePagination() {
-        const totalPages = Math.ceil(currentData.length / rowsPerPage);
-        const start = (currentPage - 1) * rowsPerPage + 1;
-        const end = Math.min(currentPage * rowsPerPage, currentData.length);
-
-        document.getElementById('pagination-info').textContent =
-            `Showing ${start} to ${end} of ${currentData.length} entries`;
-
-        document.getElementById('prev-btn').disabled = currentPage === 1;
-        document.getElementById('next-btn').disabled = currentPage === totalPages;
+    function formatHeader(header) {
+        // Format header names for display
+        return header
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase())
+            .trim();
     }
 
-    function changePage(delta) {
-        const totalPages = Math.ceil(currentData.length / rowsPerPage);
-        currentPage = Math.max(1, Math.min(totalPages, currentPage + delta));
-        renderTableRows();
+    function initDataTable() {
+        dataTable = jQuery('#data-table').DataTable({
+            responsive: true,
+            pageLength: 10,
+            lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Cari data...",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Tidak ada data",
+                infoFiltered: "(difilter dari _MAX_ total data)",
+                paginate: {
+                    first: "Awal",
+                    last: "Akhir",
+                    next: "Selanjutnya",
+                    previous: "Sebelumnya"
+                },
+                emptyTable: "Tidak ada data tersedia"
+            },
+            order: [[0, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: 0 }
+            ]
+        });
     }
 
     async function loadInfo() {
         try {
-            const response = await apiCall('/data/info');
+            const response = await apiCall('/data/info', { silentError: true });
             if (response.success) {
                 const info = response.data;
                 document.getElementById('dataset-info').classList.remove('hidden');
                 document.getElementById('info-rows').textContent = info.total_rows || 0;
                 document.getElementById('info-cols').textContent = info.total_columns || 0;
-                document.getElementById('info-features').textContent = info.total_features || 0;
-                document.getElementById('info-classes').textContent = info.target_classes || 0;
+                // Show sentiment distribution if available
+                if (info.sentiment_distribution) {
+                    const pos = info.sentiment_distribution.Positif || 0;
+                    const neg = info.sentiment_distribution.Negatif || 0;
+                    document.getElementById('info-sentiment').textContent = `P:${pos} / N:${neg}`;
+                } else {
+                    document.getElementById('info-sentiment').textContent = info.target_classes || '-';
+                }
             }
         } catch (error) {
             console.error('Failed to load info:', error);
+            // Hide dataset info when no data exists
+            document.getElementById('dataset-info').classList.add('hidden');
         }
     }
 

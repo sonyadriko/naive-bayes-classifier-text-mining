@@ -2,7 +2,8 @@
   "name": "kai-sentiment-analysis",
   "version": "1.0.0",
   "description": "Sentiment analysis for KAI Access reviews using Naive Bayes",
+  "comment": "DEPRECATED: This project now uses google-play-scraper (Python library) instead of Node.js.",
   "dependencies": {
-    "google-play-scraper": "^10.0.0"
+    "google-play-scraper": "^10.1.2"
   }
 }

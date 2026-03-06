@@ -1,6 +1,6 @@
 """Model evaluation API endpoints.
 
-Handles model evaluation and metrics.
+Handles model evaluation and metrics for both categorical and sentiment models.
 """
 
 from typing import Annotated
@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from app.schemas.prediction import EvaluationRequest
 from app.services.model_service import ModelService
+from app.services.sentiment_service import SentimentService
 from app.utils.response import ApiResponse
 
 router = APIRouter()
@@ -20,7 +21,13 @@ def get_model_service() -> ModelService:
     return ModelService()
 
 
+def get_sentiment_service() -> SentimentService:
+    """Get sentiment service instance."""
+    return SentimentService()
+
+
 ModelService = Annotated[ModelService, Depends(get_model_service)]
+SentimentService = Annotated[SentimentService, Depends(get_sentiment_service)]
 
 
 @router.post(
@@ -30,18 +37,19 @@ ModelService = Annotated[ModelService, Depends(get_model_service)]
 )
 async def evaluate_confusion_matrix(
     request: EvaluationRequest,
-    model_service: ModelService,
+    sentiment_service: SentimentService,
 ) -> JSONResponse:
     """Evaluate model with confusion matrix.
 
     Args:
         request: Evaluation request with test_size.
-        model_service: Model service instance.
+        sentiment_service: Sentiment service instance.
 
     Returns:
         JSONResponse with evaluation metrics.
     """
-    result = model_service.evaluate(test_size=request.test_size)
+    # Use sentiment service for evaluation
+    result = sentiment_service.evaluate(test_size=request.test_size)
 
     if result.is_err():
         return JSONResponse(

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Deteksi Kepuasan Pengguna KAI{% endblock %}</title>
+    <title>{% block title %}Analisis Sentimen KAI Access with Naive Bayes{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Google Fonts - Inter -->
@@ -212,6 +212,22 @@
             width: 80%;
         }
 
+        /* Active Nav Link */
+        .nav-link.active {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .nav-link.active::after {
+            width: 80%;
+        }
+
+        /* Mobile nav active state */
+        #mobile-nav a.active {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+        }
+
         /* Gradient Text */
         .gradient-text {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
@@ -278,14 +294,13 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
-                        <span class="ml-3 font-bold text-xl gradient-text hidden sm:block">KAI Satisfaction</span>
+                        <span class="ml-3 font-bold text-xl gradient-text hidden sm:block">KAI Sentiment</span>
                         <span class="ml-3 font-bold text-lg gradient-text sm:hidden">KAI</span>
                     </a>
                 </div>
 
                 <!-- Desktop Navigation -->
-                {% if user %}
-                <div class="hidden md:flex items-center space-x-1">
+                <div id="desktop-nav" class="hidden md:flex items-center space-x-1">
                     <a href="/dashboard" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100/80 hover:text-emerald-600 transition-all">
                         Dashboard
                     </a>
@@ -298,17 +313,19 @@
                     <a href="/evaluation" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100/80 hover:text-emerald-600 transition-all">
                         Evaluasi
                     </a>
+                    <a href="/scraper" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100/80 hover:text-emerald-600 transition-all">
+                        Scraper
+                    </a>
                 </div>
-                {% endif %}
 
                 <div class="flex items-center">
-                    {% if user %}
-                    <div class="flex items-center space-x-3">
+                    <!-- Logged In State (hidden by default) -->
+                    <div id="logged-in-state" class="hidden flex items-center space-x-3">
                         <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-slate-100/60 rounded-lg">
                             <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-sm font-semibold">{{ user.name[0]|upper }}</span>
+                                <span id="user-initial" class="text-white text-sm font-semibold">U</span>
                             </div>
-                            <span class="text-sm font-medium text-slate-700">{{ user.name }}</span>
+                            <span id="user-name" class="text-sm font-medium text-slate-700">User</span>
                         </div>
                         <button onclick="logout()" class="flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
                             <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -317,21 +334,19 @@
                             Logout
                         </button>
                     </div>
-                    {% else %}
-                    <a href="/login" class="btn-primary px-5 py-2.5 rounded-xl text-sm font-medium text-white shadow-lg shadow-emerald-500/30 flex items-center">
+                    <!-- Logged Out State -->
+                    <a id="login-btn" href="/login" class="btn-primary px-5 py-2.5 rounded-xl text-sm font-medium text-white shadow-lg shadow-emerald-500/30 flex items-center">
                         <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                         </svg>
                         Login
                     </a>
-                    {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Mobile Navigation -->
-        {% if user %}
-        <div class="md:hidden px-4 pb-3">
+        <div id="mobile-nav" class="hidden md:hidden px-4 pb-3">
             <div class="flex flex-wrap gap-1">
                 <a href="/dashboard" class="px-3 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
                     Dashboard
@@ -345,9 +360,11 @@
                 <a href="/evaluation" class="px-3 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
                     Evaluasi
                 </a>
+                <a href="/scraper" class="px-3 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
+                    Scraper
+                </a>
             </div>
         </div>
-        {% endif %}
     </nav>
 
     <!-- Toast Notification Container -->
@@ -369,7 +386,7 @@
                         </svg>
                     </div>
                     <p class="text-sm text-slate-500">
-                        &copy; 2024 Deteksi Kepuasan Pengguna Access by KAI.
+                        &copy; 2024 Analisis Sentimen KAI Access with Naive Bayes.
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -467,28 +484,34 @@
 
         // API helper function
         async function apiCall(endpoint, options = {}) {
+            const { silentError = false, ... requestOptions } = options;
             const token = getToken();
             const headers = {
                 'Content-Type': 'application/json',
                 ...(token && { 'Authorization': `Bearer ${token}` }),
-                ...options.headers
+                ...requestOptions.headers
             };
 
             try {
                 const response = await fetch(`${API_BASE}${endpoint}`, {
-                    ...options,
+                    ...requestOptions,
                     headers
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.message || 'Request failed');
+                    throw new Error(data.meta?.message || data.message || 'Request failed');
                 }
+
+                // Add success property for backward compatibility
+                data.success = data.meta?.status === 'success';
 
                 return data;
             } catch (error) {
-                showToast(error.message, 'error');
+                if (!silentError) {
+                    showToast(error.message, 'error');
+                }
                 throw error;
             }
         }
@@ -509,6 +532,68 @@
                 window.location.href = '/dashboard';
             }
         }
+
+        // Update auth UI based on localStorage
+        function updateAuthUI() {
+            const token = getToken();
+            const user = getUser();
+
+            const desktopNav = document.getElementById('desktop-nav');
+            const loggedInState = document.getElementById('logged-in-state');
+            const loginBtn = document.getElementById('login-btn');
+            const mobileNav = document.getElementById('mobile-nav');
+            const userName = document.getElementById('user-name');
+            const userInitial = document.getElementById('user-initial');
+
+            if (token && user) {
+                // User is logged in - show nav and logout, hide login button
+                if (desktopNav) desktopNav.classList.remove('hidden');
+                if (loggedInState) loggedInState.classList.remove('hidden');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (mobileNav) mobileNav.classList.remove('hidden');
+                if (userName) userName.textContent = user.name;
+                if (userInitial) userInitial.textContent = user.name.charAt(0).toUpperCase();
+            } else {
+                // User is logged out - hide nav and logout, show login button
+                if (desktopNav) desktopNav.classList.add('hidden');
+                if (loggedInState) loggedInState.classList.add('hidden');
+                if (loginBtn) loginBtn.classList.remove('hidden');
+                if (mobileNav) mobileNav.classList.add('hidden');
+            }
+        }
+
+        // Update UI on page load
+        updateAuthUI();
+
+        // Set active nav link based on current path
+        function setActiveNavLink() {
+            const currentPath = window.location.pathname;
+
+            // Desktop nav links
+            document.querySelectorAll('#desktop-nav .nav-link').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath || (currentPath.startsWith(href) && href !== '/')) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Mobile nav links
+            document.querySelectorAll('#mobile-nav a').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath || (currentPath.startsWith(href) && href !== '/')) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        }
+
+        setActiveNavLink();
+
+        // Also update when storage changes (e.g., login in another tab)
+        window.addEventListener('storage', updateAuthUI);
 
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

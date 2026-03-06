@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Evaluasi Model - Deteksi Kepuasan Pengguna KAI{% endblock %}
+{% block title %}Evaluasi Model - Analisis Sentimen KAI Access{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -218,7 +218,7 @@
     <!-- Page Header -->
     <div class="mb-8 fade-in-up">
         <h1 class="text-3xl font-bold text-slate-900">Evaluasi Model</h1>
-        <p class="text-slate-500 mt-2">Evaluasi performa model Naive Bayes untuk deteksi kepuasan</p>
+        <p class="text-slate-500 mt-2">Evaluasi performa model Naive Bayes untuk analisis sentimen</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -352,14 +352,30 @@
                 </div>
 
                 <!-- Test Size Info -->
-                <div class="bg-slate-50 rounded-xl p-4 flex items-center">
-                    <svg class="w-5 h-5 text-slate-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p class="text-sm text-slate-600">
-                        <span class="font-medium text-slate-700">Konfigurasi:</span>
-                        Test Size = <span id="result-test-size" class="font-bold text-emerald-600">-</span>
-                    </p>
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <div class="flex items-center mb-3">
+                        <svg class="w-5 h-5 text-slate-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-sm text-slate-600">
+                            <span class="font-medium text-slate-700">Konfigurasi:</span>
+                            Test Size = <span id="result-test-size" class="font-bold text-emerald-600">-</span>
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-200">
+                        <div class="text-center">
+                            <p class="text-xs text-slate-500 mb-1">Total Data</p>
+                            <p id="result-total-samples" class="text-lg font-bold text-slate-900">-</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs text-slate-500 mb-1">Data Latih</p>
+                            <p id="result-train-samples" class="text-lg font-bold text-emerald-600">-</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs text-slate-500 mb-1">Data Uji</p>
+                            <p id="result-test-samples" class="text-lg font-bold text-teal-600">-</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -448,12 +464,17 @@
         animateCounter(document.getElementById('metric-precision'), data.precision);
         animateCounter(document.getElementById('metric-recall'), data.recall);
         animateCounter(document.getElementById('metric-f1'), data.f1_score);
-        document.getElementById('result-test-size').textContent = data.test_size;
 
-        renderConfusionMatrix(data.confusion_matrix);
+        // Display data info
+        document.getElementById('result-test-size').textContent = (data.test_size * 100) + '%';
+        document.getElementById('result-total-samples').textContent = data.total_samples || '-';
+        document.getElementById('result-train-samples').textContent = data.train_samples || '-';
+        document.getElementById('result-test-samples').textContent = data.test_samples || '-';
+
+        renderConfusionMatrix(data.confusion_matrix, data.labels);
     }
 
-    function renderConfusionMatrix(matrix) {
+    function renderConfusionMatrix(matrix, labels) {
         const container = document.getElementById('confusion-matrix');
 
         if (!matrix || matrix.length === 0) {
@@ -465,13 +486,16 @@
         const cols = matrix[0].length;
         const maxValue = Math.max(...matrix.flat());
 
+        // Use provided labels or defaults
+        const displayLabels = labels || ['Positif', 'Negatif'];
+
         let html = '<div class="inline-flex flex-col">';
 
         // Header row
         html += '<div class="flex gap-1 mb-1">';
         html += '<div class="w-[72px]"></div>';
         for (let j = 0; j < cols; j++) {
-            html += `<div class="matrix-cell header">Pred ${j}</div>`;
+            html += `<div class="matrix-cell header">${displayLabels[j] || 'Pred ' + j}</div>`;
         }
         html += '<div class="matrix-cell header">Total</div>';
         html += '</div>';
@@ -481,7 +505,7 @@
             html += '<div class="flex gap-1 mb-1">';
 
             // Row header
-            html += `<div class="matrix-cell row-label">Actual ${i}</div>`;
+            html += `<div class="matrix-cell row-label">${displayLabels[i] || 'Actual ' + i}</div>`;
 
             let rowTotal = 0;
             for (let j = 0; j < cols; j++) {

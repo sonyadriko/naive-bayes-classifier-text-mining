@@ -32,8 +32,6 @@ from app.schemas.prediction import (
     TrainModelRequest,
 )
 from app.schemas.scraper import (
-    DependencyCheckResponse,
-    InstallDependencyResponse,
     ScrapeRequest,
     ScrapeResponse,
     ScraperStatusResponse,
@@ -89,6 +87,4 @@ __all__ = [
     "ScrapeRequest",
     "ScrapeResponse",
     "ScraperStatusResponse",
-    "DependencyCheckResponse",
-    "InstallDependencyResponse",
 ]

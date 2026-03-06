@@ -120,19 +120,30 @@ class DataService:
         return self.label_service.transform(input_data)
 
     def read_data(self) -> Result[list[dict[str, Any]], str]:
-        """Read data from Excel file.
+        """Read data from Excel file or reviews CSV.
 
         Returns:
             Ok(list of data rows) if successful, Err with message if failed.
         """
         try:
+            # First try to read categorical data (data.xlsx)
             data_path = self.data_dir / "data.xlsx"
+
+            # Fall back to reviews.csv if data.xlsx doesn't exist
+            if not data_path.exists():
+                data_path = self.data_dir / "reviews.csv"
 
             if not data_path.exists():
                 return Err("No data file found. Please upload a file first.")
 
-            data = pd.read_excel(data_path)
-            return Ok(data.to_dict(orient="records"))
+            # Read based on file extension
+            if data_path.suffix == ".csv":
+                data = pd.read_csv(data_path)
+            else:
+                data = pd.read_excel(data_path)
+
+            # Replace NaN values with None for JSON serialization
+            return Ok(data.where(pd.notnull(data), None).to_dict(orient="records"))
 
         except Exception as e:
             return Err(f"Failed to read data: {str(e)}")
@@ -183,33 +194,64 @@ class DataService:
             Ok(dict with dataset info) if successful, Err with message if failed.
         """
         try:
+            # First try to read categorical data (data.xlsx)
             data_path = self.data_dir / "data.xlsx"
+
+            # Fall back to reviews.csv if data.xlsx doesn't exist
+            if not data_path.exists():
+                data_path = self.data_dir / "reviews.csv"
 
             if not data_path.exists():
                 return Err("No data file found. Please upload a file first.")
 
-            data = pd.read_excel(data_path)
+            # Read based on file extension
+            if data_path.suffix == ".csv":
+                data = pd.read_csv(data_path)
+            else:
+                data = pd.read_excel(data_path)
 
-            features = []
-            for col in data.columns:
-                if col != settings.target_column:
-                    features.append(
-                        {
-                            "name": col,
-                            "type": str(data[col].dtype),
-                            "unique_values": int(data[col].nunique()),
-                            "sample_values": data[col].head(3).tolist(),
-                        }
-                    )
+            # Check if this is sentiment data (has content/sentiment columns)
+            is_sentiment_data = "content" in data.columns or "sentiment" in data.columns
 
-            return Ok(
-                {
-                    "total_rows": len(data),
-                    "total_columns": len(data.columns),
-                    "target_column": settings.target_column,
-                    "features": features,
-                }
-            )
+            if is_sentiment_data:
+                # Sentiment analysis data info
+                sentiment_dist = {}
+                if "sentiment" in data.columns:
+                    # Drop NaN values before counting
+                    sentiment_dist = data["sentiment"].dropna().value_counts().to_dict()
+
+                return Ok(
+                    {
+                        "total_rows": len(data),
+                        "total_columns": len(data.columns),
+                        "data_type": "sentiment",
+                        "sentiment_distribution": sentiment_dist,
+                    }
+                )
+            else:
+                # Categorical data info
+                features = []
+                for col in data.columns:
+                    if col != settings.target_column:
+                        # Replace NaN with None in sample values for JSON serialization
+                        sample_values = data[col].head(3).where(pd.notnull(data[col].head(3)), None).tolist()
+                        features.append(
+                            {
+                                "name": col,
+                                "type": str(data[col].dtype),
+                                "unique_values": int(data[col].nunique()),
+                                "sample_values": sample_values,
+                            }
+                        )
+
+                return Ok(
+                    {
+                        "total_rows": len(data),
+                        "total_columns": len(data.columns),
+                        "target_column": settings.target_column,
+                        "features": features,
+                    }
+                )
 
         except Exception as e:
             return Err(f"Failed to get data info: {str(e)}")

@@ -45,11 +45,29 @@ ENV/
 *.sqlite
 *.sqlite3
 
-# Data files
-data.xlsx
+# Data files - keep dictionaries, exclude everything else
+data/models/
+data/reviews/
+data/encoders/
 *.xlsx
 *.xls
 *.csv
+!data/dictionaries/*.txt
+!data/stopwords/*.txt
+
+# Node.js (google-play-scraper)
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+
+# Model cache files
+*.pkl
+*.pickle
+*.joblib
+
+# Uploaded files
+uploads/
 
 # Logs
 *.log
@@ -60,9 +78,10 @@ logs/
 .coverage
 htmlcov/
 .tox/
+.pytest_cache/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # mypy
 .mypy_cache/
@@ -71,3 +90,9 @@ dmypy.json
 
 # FastAPI specific
 .cache/
+
+# Claude Code memory
+.claude/
+
+# OS
+Thumbs.db

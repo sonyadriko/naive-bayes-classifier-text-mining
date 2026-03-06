@@ -1,16 +1,21 @@
 """Google Play Store review scraper service.
 
 This module provides functionality to scrape reviews from the Google Play Store
-for the KAI Access application.
+for the KAI Access application using the Python google-play-scraper-rw library.
 """
 
-import json
-import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+# Try to import the Python library
+try:
+    from google_play_scraper import Sort, reviews
+    HAS_SCRAPER_LIB = True
+except ImportError:
+    HAS_SCRAPER_LIB = False
 
 from app.core.config import get_settings
 from app.utils.response import Err, Ok, Result
@@ -21,7 +26,7 @@ settings = get_settings()
 class GooglePlayScraper:
     """Scraper for Google Play Store reviews.
 
-    Uses google-play-scraper (npm package) via subprocess to fetch reviews.
+    Uses google-play-scraper-rw (Python library) to fetch reviews.
     """
 
     # KAI Access app ID on Google Play Store
@@ -41,83 +46,49 @@ class GooglePlayScraper:
 
         Args:
             max_reviews: Maximum number of reviews to scrape.
-            sort_by: Sort order - "newest", "rating", "relevance".
+            sort_by: Sort order - "newest", "rating", "relevance", "helpful".
 
         Returns:
             Ok(list of review dicts) if successful, Err with message if failed.
         """
+        if not HAS_SCRAPER_LIB:
+            return Err(
+                "google-play-scraper library not found. "
+                "Run: pip install google-play-scraper"
+            )
+
         try:
             # Validate sort_by
             valid_sorts = ["newest", "rating", "relevance", "helpful"]
             if sort_by not in valid_sorts:
                 return Err(f"Invalid sort_by. Must be one of: {valid_sorts}")
 
-            # Map sort options to google-play-scraper constants
+            # Map sort options to Sort enum
             sort_map = {
-                "newest": "gplay.sort.NEWEST",
-                "rating": "gplay.sort.RATING",
-                "relevance": "gplay.sort.RELEVANCE",
-                "helpful": "gplay.sort.HELPFULNESS",
+                "newest": Sort.NEWEST,
+                "rating": Sort.RATING,
+                "relevance": Sort.MOST_RELEVANT,
+                "helpful": Sort.NEWEST,  # Fallback to newest since HELPFUL doesn't exist
             }
 
-            # Create Node.js script
-            script = f'''
-const gplay = require('google-play-scraper');
-
-gplay.reviews({{
-    appId: '{self.APP_ID}',
-    sort: {sort_map.get(sort_by, sort_map["newest"])},
-    num: {max_reviews},
-    paginate: true
-}})
-.then(response => {{
-    // Extract reviews from response
-    const reviews = response.data || response;
-    console.log(JSON.stringify(reviews));
-}})
-.catch(error => {{
-    console.error(JSON.stringify({{error: error.message}}));
-    process.exit(1);
-}});
-'''
-
-            # Execute Node.js script
-            result = subprocess.run(
-                ["node", "-e", script],
-                capture_output=True,
-                text=True,
-                timeout=120,  # 2 minute timeout
-                cwd=Path(__file__).parent.parent.parent,
+            # Call the Python library
+            result = reviews(
+                self.APP_ID,
+                lang="id",  # Indonesian
+                country="id",
+                sort=sort_map.get(sort_by, Sort.NEWEST),
+                count=max_reviews,
             )
 
-            if result.returncode != 0:
-                error_output = result.stderr.strip()
-                if error_output:
-                    try:
-                        error_data = json.loads(error_output)
-                        return Err(f"Scraping failed: {error_data.get('error', error_output)}")
-                    except json.JSONDecodeError:
-                        pass
-                return Err(f"Scraping failed: {result.stderr or 'Unknown error'}")
+            # The library returns a tuple: (reviews, continuation_token)
+            # We only need the reviews list
+            reviews_data = result[0] if isinstance(result, tuple) else result
 
-            # Parse JSON output
-            output = result.stdout.strip()
-            if not output:
-                return Err("No data received from scraper")
+            if not isinstance(reviews_data, list):
+                return Err(f"Unexpected response format: {type(reviews_data).__name__}")
 
-            reviews = json.loads(output)
+            return Ok(reviews_data)
 
-            if not isinstance(reviews, list):
-                return Err(f"Unexpected response format: {type(reviews).__name__}")
-
-            return Ok(reviews)
-
-        except subprocess.TimeoutExpired:
-            return Err("Scraping timed out. Please try again with fewer reviews.")
-        except FileNotFoundError:
-            return Err("Node.js not found. Please install Node.js and google-play-scraper.")
-        except json.JSONDecodeError as e:
-            return Err(f"Failed to parse scraper output: {str(e)}")
         except Exception as e:
             return Err(f"Scraping failed: {str(e)}")
 
@@ -254,6 +225,17 @@ gplay.reviews({{
         except Exception as e:
             return Err(f"Failed to get status: {str(e)}")
 
+    def check_library_status(self) -> dict[str, Any]:
+        """Check if the Python scraper library is installed.
+
+        Returns:
+            Dict with library status information.
+        """
+        return {
+            "has_library": HAS_SCRAPER_LIB,
+            "library_name": "google-play-scraper",
+        }
+
     @staticmethod
     def _score_to_sentiment(score: float | int | None) -> str | None:
         """Convert review score to sentiment label.
@@ -276,72 +258,3 @@ gplay.reviews({{
                 return None  # Neutral (score 3) - excluded for binary classification
         except (ValueError, TypeError):
             return None
-
-
-def check_node_dependencies() -> Result[bool, str]:
-    """Check if Node.js and google-play-scraper are installed.
-
-    Returns:
-        Ok(True) if all dependencies are available, Err with message if not.
-    """
-    try:
-        # Check Node.js
-        result = subprocess.run(
-            ["node", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-
-        if result.returncode != 0:
-            return Err("Node.js is not installed. Please install Node.js from https://nodejs.org/")
-
-        # Check google-play-scraper
-        result = subprocess.run(
-            ["npm", "list", "google-play-scraper"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            cwd=Path(__file__).parent.parent.parent,
-        )
-
-        if result.returncode != 0:
-            return Err(
-                "google-play-scraper is not installed. "
-                "Run: npm install google-play-scraper"
-            )
-
-        return Ok(True)
-
-    except subprocess.TimeoutExpired:
-        return Err("Dependency check timed out")
-    except FileNotFoundError:
-        return Err("Node.js is not installed. Please install Node.js from https://nodejs.org/")
-    except Exception as e:
-        return Err(f"Dependency check failed: {str(e)}")
-
-
-def install_dependencies() -> Result[str, str]:
-    """Install google-play-scraper npm package.
-
-    Returns:
-        Ok(success message) if successful, Err with message if failed.
-    """
-    try:
-        result = subprocess.run(
-            ["npm", "install", "--save", "google-play-scraper"],
-            capture_output=True,
-            text=True,
-            timeout=300,  # 5 minute timeout
-            cwd=Path(__file__).parent.parent.parent,
-        )
-
-        if result.returncode != 0:
-            return Err(f"Installation failed: {result.stderr}")
-
-        return Ok("google-play-scraper installed successfully")
-
-    except subprocess.TimeoutExpired:
-        return Err("Installation timed out")
-    except Exception as e:
-        return Err(f"Installation failed: {str(e)}")

@@ -40,19 +40,3 @@ class ScraperStatusResponse(BaseModel):
     )
     file_path: str | None = Field(None, description="Path to data file")
     last_modified: str | None = Field(None, description="Last modification time")
-
-
-class DependencyCheckResponse(BaseModel):
-    """Schema for dependency check response."""
-
-    has_node: bool = Field(..., description="Whether Node.js is installed")
-    has_scraper: bool = Field(..., description="Whether google-play-scraper is installed")
-    node_version: str | None = Field(None, description="Node.js version")
-    message: str = Field(..., description="Status message")
-
-
-class InstallDependencyResponse(BaseModel):
-    """Schema for install dependency response."""
-
-    success: bool = Field(..., description="Whether installation succeeded")
-    message: str = Field(..., description="Installation message")

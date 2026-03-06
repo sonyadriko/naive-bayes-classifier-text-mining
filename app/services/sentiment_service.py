@@ -212,12 +212,17 @@ class SentimentService:
             else:
                 return Err("No trained model available")
 
+        # Get metadata with timestamp
+        metadata_result = self.model_cache.get_metadata("sentiment")
+        metadata = metadata_result.value if metadata_result.is_ok() else {}
+
         return Ok(
             {
                 "model_type": "MultinomialNaiveBayes",
                 "is_trained": self._classifier.is_trained(),
                 "classes": self._classifier.get_classes(),
                 "vocabulary_size": len(self._classifier.get_vocabulary()),
+                "last_trained": metadata.get("last_trained"),
             }
         )
 
@@ -231,6 +236,92 @@ class SentimentService:
         self._classifier = None
         self._vocabulary = None
         return result
+
+    def evaluate(self, test_size: float = 0.2) -> Result[dict[str, Any], str]:
+        """Evaluate sentiment model using train-test split.
+
+        Args:
+            test_size: Proportion of data for testing.
+
+        Returns:
+            Ok(evaluation metrics) if successful, Err with message if failed.
+        """
+        try:
+            from sklearn.metrics import (
+                accuracy_score,
+                confusion_matrix,
+                f1_score,
+                precision_score,
+                recall_score,
+            )
+            from sklearn.model_selection import train_test_split
+
+            # Get preprocessed training data - preprocess if needed
+            data_result = self.data_service.get_preprocessed_texts()
+            if data_result.is_err():
+                # Try to preprocess first
+                preprocess_result = self.data_service.preprocess_dataset()
+                if preprocess_result.is_err():
+                    return Err(f"Failed to get training data: {data_result.error}. Please upload data first.")
+                # Try again after preprocessing
+                data_result = self.data_service.get_preprocessed_texts()
+                if data_result.is_err():
+                    return Err(f"Failed to get training data after preprocessing: {data_result.error}")
+
+            texts, labels = data_result.value
+
+            if not texts or not labels:
+                return Err("No training data available. Please upload and preprocess data first.")
+
+            # Build vocabulary
+            vocab = self._build_vocabulary_from_texts(texts)
+
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                texts, labels, test_size=test_size, random_state=42
+            )
+
+            # Train model
+            classifier = MultinomialNaiveBayes(alpha=1.0)
+            train_result = classifier.train(X_train, y_train, vocab)
+
+            if train_result.is_err():
+                return Err(f"Training failed: {train_result.error}")
+
+            # Make predictions
+            y_pred = []
+            for text in X_test:
+                pred_result = classifier.predict(text)
+                if pred_result.is_ok():
+                    y_pred.append(pred_result.value.predicted_class)
+                else:
+                    y_pred.append("Negatif")  # Default fallback
+
+            # Calculate metrics
+            cm = confusion_matrix(y_test, y_pred, labels=["Positif", "Negatif"])
+            accuracy = accuracy_score(y_test, y_pred)
+
+            precision = precision_score(y_test, y_pred, average="binary", pos_label="Positif", zero_division=0)
+            recall = recall_score(y_test, y_pred, average="binary", pos_label="Positif", zero_division=0)
+            f1 = f1_score(y_test, y_pred, average="binary", pos_label="Positif", zero_division=0)
+
+            return Ok(
+                {
+                    "test_size": test_size,
+                    "total_samples": len(texts),
+                    "train_samples": len(X_train),
+                    "test_samples": len(X_test),
+                    "confusion_matrix": cm.tolist(),
+                    "accuracy": round(accuracy, 4),
+                    "precision": round(precision, 4),
+                    "recall": round(recall, 4),
+                    "f1_score": round(f1, 4),
+                    "labels": ["Positif", "Negatif"],
+                }
+            )
+
+        except Exception as e:
+            return Err(f"Evaluation failed: {str(e)}")
 
     def _build_vocabulary_from_texts(self, texts: list[str]) -> list[str]:
         """Build vocabulary from preprocessed texts.

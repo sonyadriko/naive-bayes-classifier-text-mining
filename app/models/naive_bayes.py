@@ -8,8 +8,10 @@ Includes:
 - MultinomialNaiveBayes: Multinomial Naive Bayes for text classification
 """
 
+import json
 import pickle
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -904,6 +906,17 @@ class ModelCache:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
+    def _get_metadata_path(self, key: str) -> Path:
+        """Get path for metadata file.
+
+        Args:
+            key: Cache key.
+
+        Returns:
+            Path to metadata file.
+        """
+        return self.cache_dir / f"{key}.meta.json"
+
     def save(self, model: NaiveBayesClassifier | MultinomialNaiveBayes, key: str) -> Result[None, str]:
         """Save model to cache.
 
@@ -918,6 +931,17 @@ class ModelCache:
             cache_path = self.cache_dir / f"{key}.pkl"
             with open(cache_path, "wb") as f:
                 pickle.dump(model, f)
+
+            # Save metadata with timestamp
+            metadata = {
+                "last_trained": datetime.utcnow().isoformat(),
+                "model_type": model.__class__.__name__,
+                "is_trained": model.is_trained(),
+            }
+            metadata_path = self._get_metadata_path(key)
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f)
+
             return Ok(None)
         except Exception as e:
             return Err(f"Failed to save model to cache: {str(e)}")
@@ -948,6 +972,29 @@ class ModelCache:
         except Exception as e:
             return Err(f"Failed to load model from cache: {str(e)}")
 
+    def get_metadata(self, key: str) -> Result[dict[str, Any], str]:
+        """Get model metadata from cache.
+
+        Args:
+            key: Cache key.
+
+        Returns:
+            Ok(metadata) if found, Err with message if failed.
+        """
+        try:
+            metadata_path = self._get_metadata_path(key)
+
+            if not metadata_path.exists():
+                return Ok({})
+
+            with open(metadata_path, "r") as f:
+                metadata = json.load(f)
+
+            return Ok(metadata)
+
+        except Exception as e:
+            return Err(f"Failed to load metadata: {str(e)}")
+
     def clear(self, key: str | None = None) -> Result[None, str]:
         """Clear cached models.
 
@@ -962,9 +1009,15 @@ class ModelCache:
                 cache_path = self.cache_dir / f"{key}.pkl"
                 if cache_path.exists():
                     cache_path.unlink()
+                # Also clear metadata
+                metadata_path = self._get_metadata_path(key)
+                if metadata_path.exists():
+                    metadata_path.unlink()
             else:
                 for cache_file in self.cache_dir.glob("*.pkl"):
                     cache_file.unlink()
+                for meta_file in self.cache_dir.glob("*.meta.json"):
+                    meta_file.unlink()
 
             return Ok(None)
 
