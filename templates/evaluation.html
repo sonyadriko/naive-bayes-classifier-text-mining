@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluasi Model - Deteksi Kepuasan Pengguna KAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Settings Panel */
+    .settings-panel {
+        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 6rem;
+    }
+
+    /* Custom Range Slider */
+    .slider-container {
+        position: relative;
+        padding: 1rem 0;
+    }
+
+    .custom-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(90deg, #ecfdf5 0%, #f0fdfa 50%, #ecfdf5 100%);
+        border-radius: 1rem;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transition: all 0.2s ease;
+    }
+
+    .custom-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+
+    .custom-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Metric Cards */
+    .metric-card {
+        border-radius: 1rem;
+        padding: 1.5rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .metric-card:hover::before {
+        opacity: 1;
+    }
+
+    .metric-card.accuracy {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .metric-card.precision {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .metric-card.recall {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .metric-card.f1 {
+        background: linear-gradient(135deg, #a3e635 0%, #84cc16 100%);
+    }
+
+    /* Confusion Matrix */
+    .confusion-matrix-wrapper {
+        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        border-radius: 1.25rem;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .matrix-cell {
+        width: 72px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.125rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .matrix-cell:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+
+    .matrix-cell.header {
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        height: 40px;
+    }
+
+    .matrix-cell.row-label {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    .matrix-cell.total {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .matrix-cell.grand-total {
+        background: #cbd5e1;
+        color: #1e293b;
+    }
+
+    /* Color scale for confusion matrix */
+    .matrix-cell.scale-0 { background: #f1f5f9; color: #64748b; }
+    .matrix-cell.scale-1 { background: #ccfbf1; color: #0f766e; }
+    .matrix-cell.scale-2 { background: #99f6e4; color: #0f766e; }
+    .matrix-cell.scale-3 { background: #5eead4; color: #042f2e; }
+    .matrix-cell.scale-4 { background: #2dd4bf; color: #042f2e; }
+    .matrix-cell.scale-5 { background: #14b8a6; color: #ffffff; }
+
+    /* Empty State */
+    .empty-state {
+        background: white;
+        border: 2px dashed #e2e8f0;
+        border-radius: 1.25rem;
+        padding: 5rem 2rem;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        width: 96px;
+        height: 96px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-radius: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Info Box */
+    .info-box {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+        border: 1px solid #a7f3d0;
+        border-radius: 0.75rem;
+        padding: 1rem;
+    }
+
+    /* Input Styling */
+    .input-emerald {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.625rem;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+        background: #f8fafc;
+    }
+
+    .input-emerald:focus {
+        border-color: #10b981;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        outline: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8 fade-in-up">
+        <h1 class="text-3xl font-bold text-slate-900">Evaluasi Model</h1>
+        <p class="text-slate-500 mt-2">Evaluasi performa model Naive Bayes untuk deteksi kepuasan</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Settings Panel -->
+        <div class="lg:col-span-1">
+            <div class="settings-panel fade-in-up">
+                <h2 class="text-lg font-bold text-slate-900 mb-6 flex items-center">
+                    <span class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </span>
+                    Konfigurasi
+                </h2>
+
+                <form onsubmit="runEvaluation(event)" class="space-y-6">
+                    <!-- Test Size Input -->
+                    <div>
+                        <label for="test-size" class="block text-sm font-medium text-slate-700 mb-2">
+                            Test Size
+                        </label>
+                        <input
+                            type="number"
+                            id="test-size"
+                            name="test_size"
+                            min="0.1"
+                            max="0.9"
+                            step="0.1"
+                            value="0.2"
+                            required
+                            class="input-emerald">
+                        <p class="mt-2 text-xs text-slate-400">Proporsi data untuk testing (0.1 - 0.9)</p>
+                    </div>
+
+                    <!-- Test Size Slider -->
+                    <div class="slider-container">
+                        <input
+                            type="range"
+                            id="test-size-slider"
+                            min="1"
+                            max="9"
+                            value="2"
+                            class="custom-slider"
+                            oninput="updateTestSizeFromSlider(this.value)">
+                        <div class="flex justify-between text-xs text-slate-400 mt-3">
+                            <span>10%</span>
+                            <span>50%</span>
+                            <span>90%</span>
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="info-box">
+                        <div class="flex">
+                            <svg class="w-5 h-5 text-emerald-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="text-sm text-slate-700">
+                                <p class="font-medium text-emerald-700">Info Evaluasi</p>
+                                <p class="mt-1 text-slate-600">Model akan dievaluasi menggunakan train-test split. Data dibagi menjadi data training dan testing sesuai proporsi.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button
+                        type="submit"
+                        id="evaluate-btn"
+                        class="w-full btn-primary py-3 px-6 rounded-xl font-semibold text-white flex items-center justify-center">
+                        <svg id="evaluate-icon" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span id="evaluate-btn-text">Evaluasi Model</span>
+                        <div id="evaluate-spinner" class="spinner hidden ml-2"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="lg:col-span-2">
+            <!-- Empty State -->
+            <div id="result-empty" class="empty-state fade-in">
+                <div class="empty-state-icon">
+                    <svg class="w-12 h-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-700 mb-2">Belum Ada Evaluasi</h3>
+                <p class="text-slate-500">Klik tombol "Evaluasi Model" untuk melihat hasil evaluasi</p>
+            </div>
+
+            <!-- Result Content -->
+            <div id="result-content" class="hidden space-y-6">
+                <!-- Metrics Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="metric-card accuracy scale-in stagger-1">
+                        <p class="text-blue-100 text-xs font-medium uppercase tracking-wider mb-1">Accuracy</p>
+                        <p id="metric-accuracy" class="text-3xl font-bold">-</p>
+                    </div>
+                    <div class="metric-card precision scale-in stagger-2">
+                        <p class="text-emerald-100 text-xs font-medium uppercase tracking-wider mb-1">Precision</p>
+                        <p id="metric-precision" class="text-3xl font-bold">-</p>
+                    </div>
+                    <div class="metric-card recall scale-in stagger-3">
+                        <p class="text-amber-100 text-xs font-medium uppercase tracking-wider mb-1">Recall</p>
+                        <p id="metric-recall" class="text-3xl font-bold">-</p>
+                    </div>
+                    <div class="metric-card f1 scale-in stagger-4">
+                        <p class="text-lime-100 text-xs font-medium uppercase tracking-wider mb-1">F1-Score</p>
+                        <p id="metric-f1" class="text-3xl font-bold">-</p>
+                    </div>
+                </div>
+
+                <!-- Confusion Matrix -->
+                <div class="confusion-matrix-wrapper fade-in-up">
+                    <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center">
+                        <span class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                        </span>
+                        Confusion Matrix
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <div id="confusion-matrix" class="flex justify-center">
+                            <!-- Confusion matrix will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Size Info -->
+                <div class="bg-slate-50 rounded-xl p-4 flex items-center">
+                    <svg class="w-5 h-5 text-slate-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-sm text-slate-600">
+                        <span class="font-medium text-slate-700">Konfigurasi:</span>
+                        Test Size = <span id="result-test-size" class="font-bold text-emerald-600">-</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Sync slider with input
+    function updateTestSizeFromSlider(value) {
+        const testSize = value / 10;
+        document.getElementById('test-size').value = testSize;
+    }
+
+    document.getElementById('test-size').addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        document.getElementById('test-size-slider').value = value * 10;
+    });
+
+    function setEvaluateLoading(loading) {
+        const btn = document.getElementById('evaluate-btn');
+        const spinner = document.getElementById('evaluate-spinner');
+        const btnText = document.getElementById('evaluate-btn-text');
+        const icon = document.getElementById('evaluate-icon');
+
+        btn.disabled = loading;
+        spinner.classList.toggle('hidden', !loading);
+        icon.classList.toggle('hidden', loading);
+
+        if (loading) {
+            btnText.textContent = 'Mengevaluasi...';
+        } else {
+            btnText.textContent = 'Evaluasi Model';
+        }
+    }
+
+    async function runEvaluation(event) {
+        event.preventDefault();
+
+        const testSize = parseFloat(document.getElementById('test-size').value);
+
+        setEvaluateLoading(true);
+
+        try {
+            const response = await apiCall('/evaluation/confusion-matrix', {
+                method: 'POST',
+                body: JSON.stringify({ test_size: testSize })
+            });
+
+            if (response.success) {
+                displayResults(response.data);
+                showToast('Evaluasi berhasil!', 'success');
+            }
+        } catch (error) {
+            // Error handled by apiCall
+        } finally {
+            setEvaluateLoading(false);
+        }
+    }
+
+    function animateCounter(element, target, duration = 1000) {
+        const start = 0;
+        const increment = target / (duration / 16);
+        let current = start;
+
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                element.textContent = (target * 100).toFixed(2) + '%';
+                clearInterval(timer);
+            } else {
+                element.textContent = (current * 100).toFixed(2) + '%';
+            }
+        }, 16);
+    }
+
+    function displayResults(data) {
+        document.getElementById('result-empty').classList.add('hidden');
+        const resultContent = document.getElementById('result-content');
+        resultContent.classList.remove('hidden');
+        resultContent.classList.add('fade-in');
+
+        // Animate metrics
+        animateCounter(document.getElementById('metric-accuracy'), data.accuracy);
+        animateCounter(document.getElementById('metric-precision'), data.precision);
+        animateCounter(document.getElementById('metric-recall'), data.recall);
+        animateCounter(document.getElementById('metric-f1'), data.f1_score);
+        document.getElementById('result-test-size').textContent = data.test_size;
+
+        renderConfusionMatrix(data.confusion_matrix);
+    }
+
+    function renderConfusionMatrix(matrix) {
+        const container = document.getElementById('confusion-matrix');
+
+        if (!matrix || matrix.length === 0) {
+            container.innerHTML = '<p class="text-slate-500">Tidak ada data confusion matrix</p>';
+            return;
+        }
+
+        const rows = matrix.length;
+        const cols = matrix[0].length;
+        const maxValue = Math.max(...matrix.flat());
+
+        let html = '<div class="inline-flex flex-col">';
+
+        // Header row
+        html += '<div class="flex gap-1 mb-1">';
+        html += '<div class="w-[72px]"></div>';
+        for (let j = 0; j < cols; j++) {
+            html += `<div class="matrix-cell header">Pred ${j}</div>`;
+        }
+        html += '<div class="matrix-cell header">Total</div>';
+        html += '</div>';
+
+        // Data rows
+        for (let i = 0; i < rows; i++) {
+            html += '<div class="flex gap-1 mb-1">';
+
+            // Row header
+            html += `<div class="matrix-cell row-label">Actual ${i}</div>`;
+
+            let rowTotal = 0;
+            for (let j = 0; j < cols; j++) {
+                rowTotal += matrix[i][j];
+                const value = matrix[i][j];
+                const intensity = maxValue > 0 ? value / maxValue : 0;
+                const scaleClass = getScaleClass(intensity);
+
+                html += `<div class="matrix-cell ${scaleClass}" title="${value}">${value}</div>`;
+            }
+
+            // Row total
+            html += `<div class="matrix-cell total">${rowTotal}</div>`;
+            html += '</div>';
+        }
+
+        // Column totals
+        html += '<div class="flex gap-1">';
+        html += '<div class="matrix-cell total">Total</div>';
+        for (let j = 0; j < cols; j++) {
+            let colTotal = 0;
+            for (let i = 0; i < rows; i++) {
+                colTotal += matrix[i][j];
+            }
+            html += `<div class="matrix-cell total">${colTotal}</div>`;
+        }
+        html += `<div class="matrix-cell grand-total">${matrix.flat().reduce((a, b) => a + b, 0)}</div>`;
+        html += '</div>';
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function getScaleClass(intensity) {
+        if (intensity === 0) return 'scale-0';
+        if (intensity < 0.2) return 'scale-1';
+        if (intensity < 0.4) return 'scale-2';
+        if (intensity < 0.6) return 'scale-3';
+        if (intensity < 0.8) return 'scale-4';
+        return 'scale-5';
+    }
+</script>
+{% endblock %}

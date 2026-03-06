@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+
+{% block title %}Data Survey - Deteksi Kepuasan Pengguna KAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Upload Zone */
+    .upload-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 1rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-zone::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(20, 184, 166, 0.05) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+    }
+
+    .upload-zone:hover::before,
+    .upload-zone.drag-over::before {
+        opacity: 1;
+    }
+
+    .upload-zone .content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .upload-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover .upload-icon {
+        transform: scale(1.1);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Selected File Card */
+    .file-card {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+        border: 1px solid #a7f3d0;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1rem;
+    }
+
+    /* Data Table */
+    .table-container {
+        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .data-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .data-table td {
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        color: #475569;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .data-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .data-table tbody:hover tr {
+        background: #f8fafc;
+    }
+
+    .data-table tbody tr:hover {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .page-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        background: white;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .page-btn:hover:not(:disabled) {
+        border-color: #10b981;
+        color: #10b981;
+        background: #ecfdf5;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Info Stats */
+    .info-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .info-stat:last-child {
+        border-bottom: none;
+    }
+
+    .info-stat-label {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .info-stat-value {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    /* Empty State */
+    .empty-state {
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: #f1f5f9;
+        border-radius: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state-icon svg {
+        color: #cbd5e1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 fade-in-up">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Data Survey</h1>
+            <p class="text-slate-500 mt-2">Upload dan kelola data survey kepuasan pengguna</p>
+        </div>
+        <button
+            onclick="loadData()"
+            class="mt-4 sm:mt-0 btn-primary px-5 py-2.5 rounded-xl text-white font-medium flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh Data
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Upload Section -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-24 fade-in-up">
+                <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                    </span>
+                    Upload Data
+                </h2>
+
+                <!-- Drop Zone -->
+                <div
+                    id="drop-zone"
+                    class="upload-zone"
+                    onclick="document.getElementById('file-input').click()">
+                    <div class="content">
+                        <div class="upload-icon">
+                            <svg class="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <p class="text-slate-700 font-medium mb-1">Klik atau drag file Excel</p>
+                        <p class="text-slate-400 text-sm">Format: .xlsx atau .xls</p>
+                    </div>
+                </div>
+
+                <input
+                    type="file"
+                    id="file-input"
+                    accept=".xlsx,.xls"
+                    class="hidden"
+                    onchange="handleFileSelect(event)">
+
+                <!-- Selected File -->
+                <div id="selected-file" class="hidden">
+                    <div class="file-card">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <span id="file-name" class="text-sm font-medium text-slate-900 truncate max-w-[150px]"></span>
+                        </div>
+                        <button onclick="clearFile()" class="p-2 hover:bg-white rounded-lg transition-colors">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upload Button -->
+                <button
+                    id="upload-btn"
+                    onclick="uploadFile()"
+                    disabled
+                    class="mt-4 w-full btn-primary py-3 rounded-xl font-medium text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg id="upload-btn-icon" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span id="upload-btn-text">Upload File</span>
+                    <div id="upload-spinner" class="spinner hidden ml-2"></div>
+                </button>
+
+                <!-- Clear Cache Button -->
+                <button
+                    onclick="clearCache()"
+                    class="mt-3 w-full py-3 rounded-xl font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear Model Cache
+                </button>
+
+                <!-- Dataset Info -->
+                <div id="dataset-info" class="mt-6 hidden">
+                    <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Informasi Dataset
+                    </h3>
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="info-stat">
+                            <span class="info-stat-label">Total Baris</span>
+                            <span id="info-rows" class="info-stat-value">-</span>
+                        </div>
+                        <div class="info-stat">
+                            <span class="info-stat-label">Total Kolom</span>
+                            <span id="info-cols" class="info-stat-value">-</span>
+                        </div>
+                        <div class="info-stat">
+                            <span class="info-stat-label">Fitur</span>
+                            <span id="info-features" class="info-stat-value">-</span>
+                        </div>
+                        <div class="info-stat">
+                            <span class="info-stat-label">Kelas</span>
+                            <span id="info-classes" class="info-stat-value">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table Section -->
+        <div class="lg:col-span-2">
+            <div class="table-container fade-in-up">
+                <div class="table-header">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                        <span class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </span>
+                        Data Survey
+                    </h3>
+                </div>
+
+                <!-- Empty State -->
+                <div id="data-empty" class="empty-state">
+                    <div class="empty-state-icon">
+                        <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Belum Ada Data</h3>
+                    <p class="text-slate-500 text-sm">Upload file Excel untuk menampilkan data training</p>
+                </div>
+
+                <!-- Table -->
+                <div id="data-table-container" class="hidden overflow-x-auto">
+                    <table class="data-table">
+                        <thead id="table-head">
+                            <!-- Headers will be inserted here -->
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Data rows will be inserted here -->
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <div class="pagination">
+                        <p id="pagination-info" class="text-sm text-slate-500"></p>
+                        <div class="flex gap-2">
+                            <button id="prev-btn" onclick="changePage(-1)" class="page-btn">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button id="next-btn" onclick="changePage(1)" class="page-btn">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedFile = null;
+    let currentData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+
+    // Drag and drop handlers
+    const dropZone = document.getElementById('drop-zone');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    }
+
+    function handleFile(file) {
+        const validExtensions = ['.xlsx', '.xls'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+        if (!validExtensions.includes(fileExtension)) {
+            showToast('Format file harus .xlsx atau .xls', 'error');
+            return;
+        }
+
+        selectedFile = file;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('selected-file').classList.remove('hidden');
+        document.getElementById('upload-btn').disabled = false;
+    }
+
+    function clearFile() {
+        selectedFile = null;
+        document.getElementById('file-input').value = '';
+        document.getElementById('selected-file').classList.add('hidden');
+        document.getElementById('upload-btn').disabled = true;
+    }
+
+    function setUploadLoading(loading) {
+        const btn = document.getElementById('upload-btn');
+        const spinner = document.getElementById('upload-spinner');
+        const btnText = document.getElementById('upload-btn-text');
+        const icon = document.getElementById('upload-btn-icon');
+
+        btn.disabled = loading;
+        spinner.classList.toggle('hidden', !loading);
+        icon.classList.toggle('hidden', loading);
+
+        if (loading) {
+            btnText.textContent = 'Uploading...';
+        } else {
+            btnText.textContent = 'Upload File';
+        }
+    }
+
+    async function uploadFile() {
+        if (!selectedFile) return;
+
+        setUploadLoading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const response = await fetch(`${API_BASE}/data/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast('File berhasil diupload!', 'success');
+                clearFile();
+                loadData();
+                loadInfo();
+            } else {
+                showToast(data.message || 'Upload gagal', 'error');
+            }
+        } catch (error) {
+            showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+        } finally {
+            setUploadLoading(false);
+        }
+    }
+
+    async function loadData() {
+        try {
+            const response = await apiCall('/data/read');
+            if (response.success) {
+                currentData = response.data.rows;
+                displayData();
+            }
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        }
+    }
+
+    function displayData() {
+        const emptyState = document.getElementById('data-empty');
+        const tableContainer = document.getElementById('data-table-container');
+
+        if (currentData.length === 0) {
+            emptyState.classList.remove('hidden');
+            tableContainer.classList.add('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        tableContainer.classList.remove('hidden');
+
+        const headers = Object.keys(currentData[0]);
+        const tableHead = document.getElementById('table-head');
+        tableHead.innerHTML = `
+            <tr>
+                <th class="w-16">#</th>
+                ${headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+        `;
+
+        renderTableRows();
+    }
+
+    function renderTableRows() {
+        const tableBody = document.getElementById('table-body');
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = currentData.slice(start, end);
+        const headers = Object.keys(currentData[0]);
+
+        tableBody.innerHTML = pageData.map((row, idx) => `
+            <tr>
+                <td class="font-medium text-slate-500">${start + idx + 1}</td>
+                ${headers.map(h => `<td>${row[h] ?? '-'}</td>`).join('')}
+            </tr>
+        `).join('');
+
+        updatePagination();
+    }
+
+    function updatePagination() {
+        const totalPages = Math.ceil(currentData.length / rowsPerPage);
+        const start = (currentPage - 1) * rowsPerPage + 1;
+        const end = Math.min(currentPage * rowsPerPage, currentData.length);
+
+        document.getElementById('pagination-info').textContent =
+            `Showing ${start} to ${end} of ${currentData.length} entries`;
+
+        document.getElementById('prev-btn').disabled = currentPage === 1;
+        document.getElementById('next-btn').disabled = currentPage === totalPages;
+    }
+
+    function changePage(delta) {
+        const totalPages = Math.ceil(currentData.length / rowsPerPage);
+        currentPage = Math.max(1, Math.min(totalPages, currentPage + delta));
+        renderTableRows();
+    }
+
+    async function loadInfo() {
+        try {
+            const response = await apiCall('/data/info');
+            if (response.success) {
+                const info = response.data;
+                document.getElementById('dataset-info').classList.remove('hidden');
+                document.getElementById('info-rows').textContent = info.total_rows || 0;
+                document.getElementById('info-cols').textContent = info.total_columns || 0;
+                document.getElementById('info-features').textContent = info.total_features || 0;
+                document.getElementById('info-classes').textContent = info.target_classes || 0;
+            }
+        } catch (error) {
+            console.error('Failed to load info:', error);
+        }
+    }
+
+    async function clearCache() {
+        if (!confirm('Apakah Anda yakin ingin menghapus cache model?')) return;
+
+        try {
+            await apiCall('/predictions/model/cache/clear', { method: 'POST' });
+            showToast('Model cache berhasil dihapus', 'success');
+        } catch (error) {
+            // Error handled by apiCall
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+        loadInfo();
+    });
+</script>
+{% endblock %}
