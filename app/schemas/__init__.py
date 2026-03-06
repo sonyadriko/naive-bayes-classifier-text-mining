@@ -21,11 +21,22 @@ from app.schemas.data import (
     LabelsResponse,
 )
 from app.schemas.prediction import (
+    BatchSentimentRequest,
+    CategoricalPredictionRequest,
     ConfusionMatrixResponse,
     EvaluationRequest,
     LikelihoodDetail,
-    PredictionRequest,
     PredictionResponse,
+    SentimentPredictionRequest,
+    SentimentPredictionResponse,
+    TrainModelRequest,
+)
+from app.schemas.scraper import (
+    DependencyCheckResponse,
+    InstallDependencyResponse,
+    ScrapeRequest,
+    ScrapeResponse,
+    ScraperStatusResponse,
 )
 from app.schemas.user import (
     BaseUserSchema,
@@ -55,11 +66,15 @@ __all__ = [
     "UserLogin",
     "UserChangePassword",
     # Prediction schemas
-    "PredictionRequest",
+    "CategoricalPredictionRequest",
     "PredictionResponse",
     "LikelihoodDetail",
+    "SentimentPredictionRequest",
+    "SentimentPredictionResponse",
+    "BatchSentimentRequest",
     "EvaluationRequest",
     "ConfusionMatrixResponse",
+    "TrainModelRequest",
     # Data schemas
     "LabelInfo",
     "LabelsResponse",
@@ -70,4 +85,10 @@ __all__ = [
     "DataReadResponse",
     "FeatureInfo",
     "DataInfoResponse",
+    # Scraper schemas
+    "ScrapeRequest",
+    "ScrapeResponse",
+    "ScraperStatusResponse",
+    "DependencyCheckResponse",
+    "InstallDependencyResponse",
 ]

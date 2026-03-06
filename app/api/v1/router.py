@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.v1 import auth, data, evaluation, predictions, users
+from app.api.v1 import auth, data, evaluation, predictions, scraper, users
 from app.core.database import get_db
 
 # Type aliases for dependency injection
@@ -29,6 +29,7 @@ api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(data.router, prefix="/data", tags=["Data"])
 api_router.include_router(predictions.router, prefix="/predictions", tags=["Predictions"])
 api_router.include_router(evaluation.router, prefix="/evaluation", tags=["Evaluation"])
+api_router.include_router(scraper.router, prefix="/scraper", tags=["Scraper"])
 
 __all__ = [
     "api_router",

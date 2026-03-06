@@ -190,6 +190,22 @@ async def evaluation_page(request: Request):
     )
 
 
+@app.get("/scraper")
+async def scraper_page(request: Request):
+    """Render scraper page.
+
+    Args:
+        request: FastAPI request object.
+
+    Returns:
+        Template response with scraper page.
+    """
+    return templates.TemplateResponse(
+        "scraper.html",
+        {"request": request, "user": None}
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
 

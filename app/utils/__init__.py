@@ -8,6 +8,7 @@ from app.utils.response import (
     Result,
     raise_http_exception,
 )
+from app.utils.text_preprocessing import BagOfWords, TextPreprocessor
 
 __all__ = [
     "ApiResponse",
@@ -16,4 +17,6 @@ __all__ = [
     "Ok",
     "Err",
     "raise_http_exception",
+    "TextPreprocessor",
+    "BagOfWords",
 ]

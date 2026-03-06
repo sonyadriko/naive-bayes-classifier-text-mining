@@ -1,0 +1,537 @@
+{% extends "base.html" %}
+
+{% block title %}Scraper Review - KAI Access{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        border-radius: 1.25rem;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-input:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        outline: none;
+    }
+
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+    }
+
+    .range-slider {
+        width: 100%;
+        height: 6px;
+        border-radius: 0.5rem;
+        background: #e2e8f0;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #10b981;
+        cursor: pointer;
+    }
+
+    .range-value {
+        display: inline-block;
+        background: #10b981;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        min-width: 60px;
+        text-align: center;
+        margin-left: 0.5rem;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-badge.success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-badge.error {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-badge.warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .stat-card {
+        background: #f8fafc;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .dependency-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .dependency-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+    }
+
+    .dependency-status.installed {
+        background: #10b981;
+    }
+
+    .dependency-status.missing {
+        background: #ef4444;
+    }
+
+    .spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .info-box {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-box p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #166534;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8 fade-in-up">
+        <h1 class="text-3xl font-bold text-slate-900">Scraper Review Google Play</h1>
+        <p class="text-slate-500 mt-2">Ambil review aplikasi KAI Access dari Google Play Store untuk training model</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Scraper Form -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Scraper Configuration -->
+            <div class="card fade-in-up">
+                <h2 class="text-xl font-bold text-slate-900 mb-6">Konfigurasi Scraper</h2>
+
+                <!-- Info Box -->
+                <div class="info-box">
+                    <p class="flex items-center">
+                        <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Scraper akan mengambil review dari aplikasi <strong>KAI Access (com.kai.kaiticketing)</strong> di Google Play Store.</span>
+                    </p>
+                </div>
+
+                <form id="scraper-form" onsubmit="handleScrape(event)">
+                    <!-- Max Reviews -->
+                    <div class="form-group">
+                        <label class="form-label">Jumlah Review</label>
+                        <div class="flex items-center">
+                            <input
+                                type="range"
+                                id="max-reviews"
+                                name="max_reviews"
+                                class="range-slider"
+                                min="10"
+                                max="500"
+                                value="100"
+                                step="10"
+                                oninput="updateRangeValue(this)">
+                            <span id="max-reviews-value" class="range-value">100</span>
+                        </div>
+                        <p class="text-sm text-slate-500 mt-1">Jumlah maksimal review yang akan diambil (10-500)</p>
+                    </div>
+
+                    <!-- Sort By -->
+                    <div class="form-group">
+                        <label class="form-label">Urutan</label>
+                        <select id="sort-by" name="sort_by" class="form-input form-select">
+                            <option value="newest">Terbaru</option>
+                            <option value="rating">Rating Tertinggi</option>
+                            <option value="relevance">Relevansi</option>
+                            <option value="helpful">Paling Membantu</option>
+                        </select>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="btn-group">
+                        <button type="submit" id="scrape-btn" class="btn-primary flex items-center">
+                            <svg id="scrape-icon" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span id="scrape-btn-text">Mulai Scraping</span>
+                            <div id="scrape-spinner" class="spinner hidden ml-2"></div>
+                        </button>
+                        <button type="button" onclick="checkStatus()" class="btn-secondary">
+                            Cek Status
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Dependency Check -->
+            <div class="card fade-in-up">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">Status Dependensi</h2>
+                <div id="dependency-status">
+                    <p class="text-slate-500 text-sm">Memeriksa dependensi...</p>
+                </div>
+                <div id="install-dependency-btn" class="mt-4 hidden">
+                    <button type="button" onclick="installDependency()" class="btn-primary">
+                        Install google-play-scraper
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="space-y-6">
+            <!-- Scraping Status -->
+            <div class="card fade-in-up">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">Status Data</h2>
+                <div id="status-panel">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card fade-in-up">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">Aksi Cepat</h2>
+                <div class="space-y-3">
+                    <button onclick="window.location.href='/data'" class="w-full btn-secondary text-left flex items-center justify-between">
+                        <span>Upload Data Training</span>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <button onclick="window.location.href='/predictions'" class="w-full btn-secondary text-left flex items-center justify-between">
+                        <span>Analisis Sentimen</span>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <button onclick="window.location.href='/evaluation'" class="w-full btn-secondary text-left flex items-center justify-between">
+                        <span>Evaluasi Model</span>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js -->
+<script>
+    function updateRangeValue(slider) {
+        document.getElementById(slider.id + '-value').textContent = slider.value;
+    }
+
+    function setScrapeLoading(loading) {
+        const btn = document.getElementById('scrape-btn');
+        const spinner = document.getElementById('scrape-spinner');
+        const btnText = document.getElementById('scrape-btn-text');
+        const icon = document.getElementById('scrape-icon');
+
+        btn.disabled = loading;
+        spinner.classList.toggle('hidden', !loading);
+        icon.classList.toggle('hidden', loading);
+
+        if (loading) {
+            btnText.textContent = 'Scraping...';
+        } else {
+            btnText.textContent = 'Mulai Scraping';
+        }
+    }
+
+    async function handleScrape(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = {
+            max_reviews: parseInt(formData.get('max_reviews')),
+            sort_by: formData.get('sort_by')
+        };
+
+        setScrapeLoading(true);
+
+        try {
+            const response = await apiCall('/scraper/reviews', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            if (response.success) {
+                showToast(`Berhasil mengambil ${response.data.scraped} review!`, 'success');
+                checkStatus();
+            }
+        } catch (error) {
+            // Error handled by apiCall
+        } finally {
+            setScrapeLoading(false);
+        }
+    }
+
+    async function checkStatus() {
+        try {
+            const response = await apiCall('/scraper/status', {
+                method: 'GET'
+            });
+
+            if (response.success) {
+                displayStatus(response.data);
+            }
+        } catch (error) {
+            document.getElementById('status-panel').innerHTML = `
+                <p class="text-red-500 text-sm">Gagal memeriksa status</p>
+            `;
+        }
+    }
+
+    function displayStatus(data) {
+        const panel = document.getElementById('status-panel');
+
+        if (!data.has_data) {
+            panel.innerHTML = `
+                <div class="text-center py-6">
+                    <svg class="mx-auto h-12 w-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p class="text-slate-500 text-sm">Belum ada data</p>
+                </div>
+            `;
+            return;
+        }
+
+        const sentimentDist = data.sentiment_distribution || {};
+        const positif = sentimentDist.Positif || 0;
+        const negatif = sentimentDist.Negatif || 0;
+
+        panel.innerHTML = `
+            <div class="space-y-4">
+                <div class="stat-card">
+                    <p class="stat-value">${data.total_reviews}</p>
+                    <p class="stat-label">Total Review</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="stat-card bg-emerald-50">
+                        <p class="stat-value text-emerald-600">${positif}</p>
+                        <p class="stat-label">Positif</p>
+                    </div>
+                    <div class="stat-card bg-red-50">
+                        <p class="stat-value text-red-600">${negatif}</p>
+                        <p class="stat-label">Negatif</p>
+                    </div>
+                </div>
+                ${data.last_modified ? `
+                    <p class="text-xs text-slate-400 text-center">
+                        Terakhir update: ${new Date(data.last_modified).toLocaleString('id-ID')}
+                    </p>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    async function checkDependencies() {
+        try {
+            const response = await apiCall('/scraper/dependencies', {
+                method: 'GET'
+            });
+
+            if (response.success) {
+                displayDependencies(response.data);
+            }
+        } catch (error) {
+            document.getElementById('dependency-status').innerHTML = `
+                <p class="text-red-500 text-sm">Gagal memeriksa dependensi</p>
+            `;
+        }
+    }
+
+    function displayDependencies(data) {
+        const statusDiv = document.getElementById('dependency-status');
+        const installBtn = document.getElementById('install-dependency-btn');
+
+        let html = '';
+
+        // Node.js
+        html += `
+            <div class="dependency-item">
+                <span class="dependency-status ${data.has_node ? 'installed' : 'missing'}"></span>
+                <span class="flex-1">
+                    <strong>Node.js</strong>
+                    ${data.node_version ? `<span class="text-slate-500 text-sm ml-2">${data.node_version}</span>` : ''}
+                </span>
+                <span class="status-badge ${data.has_node ? 'success' : 'error'}">
+                    ${data.has_node ? 'Terinstall' : 'Tidak terinstall'}
+                </span>
+            </div>
+        `;
+
+        // google-play-scraper
+        html += `
+            <div class="dependency-item">
+                <span class="dependency-status ${data.has_scraper ? 'installed' : 'missing'}"></span>
+                <span class="flex-1"><strong>google-play-scraper</strong></span>
+                <span class="status-badge ${data.has_scraper ? 'success' : 'error'}">
+                    ${data.has_scraper ? 'Terinstall' : 'Tidak terinstall'}
+                </span>
+            </div>
+        `;
+
+        statusDiv.innerHTML = html;
+
+        // Show install button if scraper not installed
+        if (data.has_node && !data.has_scraper) {
+            installBtn.classList.remove('hidden');
+        } else {
+            installBtn.classList.add('hidden');
+        }
+    }
+
+    async function installDependency() {
+        const btn = document.getElementById('install-dependency-btn').querySelector('button');
+        const originalText = btn.textContent;
+        btn.textContent = 'Installing...';
+        btn.disabled = true;
+
+        try {
+            const response = await apiCall('/scraper/install', {
+                method: 'POST'
+            });
+
+            if (response.success) {
+                showToast('google-play-scraper berhasil diinstall!', 'success');
+                checkDependencies();
+            }
+        } catch (error) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // Check dependencies and status on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        checkDependencies();
+        checkStatus();
+    });
+</script>
+{% endblock %}

@@ -1,6 +1,7 @@
 """Data processing service.
 
 Handles Excel file processing, data conversion, and reading.
+Supports both categorical features (job placement) and text data (sentiment analysis).
 """
 
 import hashlib
@@ -16,7 +17,7 @@ from app.utils.response import Err, Ok, Result
 
 settings = get_settings()
 
-# Expected column headers
+# Expected column headers for categorical data
 EXPECTED_COLUMNS = [
     "jenisKelamin",
     "organisasi",
@@ -27,6 +28,9 @@ EXPECTED_COLUMNS = [
     "tempatKerja",
     "Durasi Mendapat Kerja",
 ]
+
+# Expected columns for text/sentiment data
+SENTIMENT_COLUMNS = ["content", "score"]  # score is optional for auto-labeling
 
 
 class DataService:
@@ -209,6 +213,206 @@ class DataService:
 
         except Exception as e:
             return Err(f"Failed to get data info: {str(e)}")
+
+    # Text/Sentiment Analysis Methods
+
+    def process_text_upload(self, file_content: bytes, filename: str) -> Result[dict[str, Any], str]:
+        """Process uploaded text review file (CSV or Excel).
+
+        Args:
+            file_content: File content as bytes.
+            filename: Original filename.
+
+        Returns:
+            Ok(dict with file info) if successful, Err with message if failed.
+        """
+        try:
+            # Validate file extension
+            if not self._is_valid_text_file(filename):
+                return Err("Invalid file format. Only .csv, .xls, and .xlsx files are allowed")
+
+            # Read file based on extension
+            if filename.endswith(".csv"):
+                data = pd.read_csv(file_content, encoding="utf-8", on_bad_lines="skip")
+            else:
+                data = pd.read_excel(file_content, header=0)
+
+            # Validate columns
+            if "content" not in data.columns:
+                return Err("Missing 'content' column. File must have a 'content' column with text data.")
+
+            # Ensure score column exists (add if missing)
+            if "score" not in data.columns:
+                data["score"] = None
+
+            # Clean data
+            data = data.dropna(subset=["content"])
+            data["content"] = data["content"].astype(str)
+
+            # Save processed data
+            processed_path = self.data_dir / "reviews.csv"
+            data.to_csv(processed_path, index=False, encoding="utf-8")
+
+            return Ok(
+                {
+                    "message": "File processed successfully",
+                    "file_path": str(processed_path),
+                    "rows": len(data),
+                    "has_scores": data["score"].notna().any(),
+                }
+            )
+
+        except Exception as e:
+            return Err(f"Failed to process text file: {str(e)}")
+
+    def load_text_dataset(self) -> Result[tuple[pd.DataFrame, pd.Series], str]:
+        """Load text dataset for sentiment analysis.
+
+        Returns:
+            Ok((X, y)) where X is text content and y is sentiment labels,
+            Err with message if failed.
+        """
+        try:
+            data_path = self.data_dir / "reviews.csv"
+
+            if not data_path.exists():
+                return Err("No text data found. Please upload a text file first.")
+
+            data = pd.read_csv(data_path)
+
+            if "content" not in data.columns:
+                return Err("Missing 'content' column in data")
+
+            # Generate labels from score if not present
+            if "sentiment" not in data.columns:
+                if "score" in data.columns and data["score"].notna().any():
+                    data["sentiment"] = data["score"].apply(self._score_to_sentiment)
+                else:
+                    return Err("No sentiment labels found. Please include 'sentiment' or 'score' column.")
+
+            # Drop rows with missing sentiment
+            data = data.dropna(subset=["sentiment"])
+
+            X = data[["content"]].copy()
+            y = data["sentiment"].copy()
+
+            return Ok((X, y))
+
+        except Exception as e:
+            return Err(f"Failed to load text dataset: {str(e)}")
+
+    def preprocess_dataset(
+        self,
+        df: pd.DataFrame | None = None,
+        preprocessor=None,
+    ) -> Result[pd.DataFrame, str]:
+        """Preprocess text dataset.
+
+        Args:
+            df: DataFrame with 'content' column. If None, loads from file.
+            preprocessor: TextPreprocessor instance. If None, creates default.
+
+        Returns:
+            Ok(DataFrame with preprocessed text) if successful, Err with message if failed.
+        """
+        try:
+            if preprocessor is None:
+                from app.utils.text_preprocessing import TextPreprocessor
+                preprocessor = TextPreprocessor()
+
+            if df is None:
+                data_path = self.data_dir / "reviews.csv"
+                if not data_path.exists():
+                    return Err("No data file found. Please upload a file first.")
+                df = pd.read_csv(data_path)
+
+            if "content" not in df.columns:
+                return Err("Missing 'content' column")
+
+            # Preprocess all texts
+            df["preprocessed"] = df["content"].apply(preprocessor.preprocess)
+
+            # Remove empty preprocessed texts
+            df = df[df["preprocessed"].str.strip() != ""]
+
+            # Save preprocessed data
+            processed_path = self.data_dir / "reviews_preprocessed.csv"
+            df.to_csv(processed_path, index=False, encoding="utf-8")
+
+            return Ok(df)
+
+        except Exception as e:
+            return Err(f"Failed to preprocess dataset: {str(e)}")
+
+    def get_preprocessed_texts(self) -> Result[tuple[list[str], list[str]], str]:
+        """Get preprocessed texts and labels for training.
+
+        Returns:
+            Ok((texts, labels)) if successful, Err with message if failed.
+        """
+        try:
+            data_path = self.data_dir / "reviews_preprocessed.csv"
+
+            if not data_path.exists():
+                # Try to preprocess first
+                preprocess_result = self.preprocess_dataset()
+                if preprocess_result.is_err():
+                    return Err("No preprocessed data found. Please upload and preprocess data first.")
+                df = preprocess_result.value
+            else:
+                df = pd.read_csv(data_path)
+
+            # Filter out rows with missing preprocessed text
+            df = df[df["preprocessed"].notna() & (df["preprocessed"] != "")]
+
+            # Generate labels if needed
+            if "sentiment" not in df.columns:
+                if "score" in df.columns:
+                    df["sentiment"] = df["score"].apply(self._score_to_sentiment)
+                else:
+                    return Err("No sentiment labels found")
+
+            texts = df["preprocessed"].tolist()
+            labels = df["sentiment"].tolist()
+
+            return Ok((texts, labels))
+
+        except Exception as e:
+            return Err(f"Failed to get preprocessed texts: {str(e)}")
+
+    def _is_valid_text_file(self, filename: str) -> bool:
+        """Check if file has valid extension for text data.
+
+        Args:
+            filename: Name of the file.
+
+        Returns:
+            True if valid, False otherwise.
+        """
+        return any(filename.endswith(ext) for ext in [".csv", ".xls", ".xlsx"])
+
+    @staticmethod
+    def _score_to_sentiment(score: float | int | str | None) -> str | None:
+        """Convert review score to sentiment label.
+
+        Args:
+            score: Review score (1-5).
+
+        Returns:
+            "Positif" for score 4-5, "Negatif" for score 1-2, None for score 3 or missing.
+        """
+        try:
+            if pd.isna(score):
+                return None
+            score_val = int(float(score))
+            if score_val >= 4:
+                return "Positif"
+            elif score_val <= 2:
+                return "Negatif"
+            else:
+                return None  # Neutral (score 3) - excluded for binary classification
+        except (ValueError, TypeError):
+            return None
 
     def _is_valid_file(self, filename: str) -> bool:
         """Check if file has valid extension.

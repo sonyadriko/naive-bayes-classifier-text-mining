@@ -1,0 +1,8 @@
+{
+  "name": "kai-sentiment-analysis",
+  "version": "1.0.0",
+  "description": "Sentiment analysis for KAI Access reviews using Naive Bayes",
+  "dependencies": {
+    "google-play-scraper": "^10.0.0"
+  }
+}

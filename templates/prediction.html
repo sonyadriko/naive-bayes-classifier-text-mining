@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Prediksi - Deteksi Kepuasan Pengguna KAI{% endblock %}
+{% block title %}Analisis Sentimen - KAI Access Review{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -13,157 +13,84 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
-    /* Floating Label Input */
-    .floating-group {
+    /* Text Area */
+    .text-input-wrapper {
         position: relative;
-        margin-bottom: 1.5rem;
     }
 
-    .floating-input {
+    .text-input {
         width: 100%;
-        padding: 1rem 1rem 0.5rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.75rem;
+        min-height: 150px;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 1rem;
         font-size: 1rem;
+        font-family: inherit;
+        line-height: 1.6;
+        resize: vertical;
         transition: all 0.2s ease;
         background: #f8fafc;
     }
 
-    .floating-input:focus {
+    .text-input:focus {
         border-color: #10b981;
         background: white;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
         outline: none;
     }
 
-    .floating-label {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
+    .text-input::placeholder {
+        color: #94a3b8;
+    }
+
+    /* Character Counter */
+    .char-counter {
+        text-align: right;
+        font-size: 0.875rem;
         color: #64748b;
-        font-size: 0.9375rem;
-        pointer-events: none;
-        transition: all 0.2s ease;
+        margin-top: 0.5rem;
     }
 
-    .floating-input:focus + .floating-label,
-    .floating-input:not(:placeholder-shown) + .floating-label,
-    .floating-input.has-value + .floating-label {
-        top: 0.625rem;
-        font-size: 0.75rem;
-        color: #10b981;
-        font-weight: 500;
-    }
-
-    /* Custom Select */
-    .custom-select-wrapper {
-        position: relative;
-    }
-
-    .custom-select {
-        width: 100%;
-        padding: 1rem 2.5rem 0.5rem 1rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.75rem;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        background: #f8fafc;
-        appearance: none;
-        cursor: pointer;
-    }
-
-    .custom-select:focus {
-        border-color: #10b981;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-        outline: none;
-    }
-
-    .custom-select-label {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #64748b;
-        font-size: 0.9375rem;
-        pointer-events: none;
-        transition: all 0.2s ease;
-    }
-
-    .custom-select:focus + .custom-select-label,
-    .custom-select:valid + .custom-select-label {
-        top: 0.625rem;
-        font-size: 0.75rem;
-        color: #10b981;
-        font-weight: 500;
-    }
-
-    .select-arrow {
-        position: absolute;
-        right: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        pointer-events: none;
-        color: #64748b;
-        transition: transform 0.2s ease;
-    }
-
-    .custom-select:focus ~ .select-arrow {
-        transform: translateY(-30%);
-    }
-
-    /* Card Radio Options */
-    .radio-card-group {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-    }
-
-    .radio-card {
-        position: relative;
-    }
-
-    .radio-card input[type="radio"] {
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .radio-card-label {
+    /* Sample Reviews */
+    .sample-reviews {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.875rem 1rem;
-        border: 1px solid #e2e8f0;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .sample-chip {
+        padding: 0.5rem 1rem;
+        background: #f1f5f9;
         border-radius: 0.75rem;
+        font-size: 0.875rem;
+        color: #475569;
         cursor: pointer;
         transition: all 0.2s ease;
-        background: #f8fafc;
-        font-weight: 500;
-        color: #475569;
+        border: 1px solid transparent;
     }
 
-    .radio-card input[type="radio"]:checked + .radio-card-label {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border-color: transparent;
-        color: white;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .radio-card-label:hover {
+    .sample-chip:hover {
+        background: #e2e8f0;
         border-color: #10b981;
     }
 
     /* Result Card */
     .result-card {
-        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
         border-radius: 1.25rem;
         padding: 2rem;
         color: white;
         position: relative;
         overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .result-card.positif {
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+    }
+
+    .result-card.negatif {
+        background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
     }
 
     .result-card::before {
@@ -173,12 +100,23 @@
         right: -30%;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, rgba(163, 230, 53, 0.3) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    }
+
+    /* Sentiment Icon */
+    .sentiment-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
     }
 
     /* Probability Bar */
     .prob-bar {
-        height: 8px;
+        height: 10px;
         background: #f1f5f9;
         border-radius: 1rem;
         overflow: hidden;
@@ -186,13 +124,16 @@
 
     .prob-fill {
         height: 100%;
-        background: linear-gradient(90deg, #10b981, #14b8a6);
         border-radius: 1rem;
         transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .prob-fill.highlight {
-        background: linear-gradient(90deg, #a3e635, #84cc16);
+    .prob-fill.positif {
+        background: linear-gradient(90deg, #10b981, #14b8a6);
+    }
+
+    .prob-fill.negatif {
+        background: linear-gradient(90deg, #ef4444, #f97316);
     }
 
     /* Empty State */
@@ -208,24 +149,33 @@
         color: #cbd5e1;
     }
 
-    /* Likelihood Card */
-    .likelihood-item {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+    /* Info Card */
+    .info-card {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
         border-radius: 0.75rem;
         padding: 1rem;
-        margin-bottom: 0.75rem;
-        transition: all 0.2s ease;
+        margin-bottom: 1.5rem;
     }
 
-    .likelihood-item:hover {
-        background: #f1f5f9;
-        border-color: #10b981;
+    .info-card p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #166534;
     }
 
-    .likelihood-item.best {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%);
-        border-color: #10b981;
+    /* Loading Spinner */
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
     }
 </style>
 {% endblock %}
@@ -234,8 +184,8 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Page Header -->
     <div class="mb-8 fade-in-up">
-        <h1 class="text-3xl font-bold text-slate-900">Deteksi Kepuasan Pengguna</h1>
-        <p class="text-slate-500 mt-2">Masukkan data survey untuk mendeteksi tingkat kepuasan pengguna</p>
+        <h1 class="text-3xl font-bold text-slate-900">Analisis Sentimen Review</h1>
+        <p class="text-slate-500 mt-2">Analisis sentimen review aplikasi KAI Access menggunakan Naive Bayes</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -244,153 +194,66 @@
             <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center">
                 <span class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
                     <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                 </span>
-                Form Data Survey
+                Masukkan Review
             </h2>
 
-            <form id="prediction-form" class="space-y-6" onsubmit="handlePrediction(event)">
-                <!-- Jenis Kelamin -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-3">Jenis Kelamin</label>
-                    <div class="radio-card-group">
-                        <div class="radio-card">
-                            <input type="radio" name="jenisKelamin" value="L" id="gender-l" required>
-                            <label class="radio-card-label" for="gender-l">
-                                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                Laki-laki
-                            </label>
-                        </div>
-                        <div class="radio-card">
-                            <input type="radio" name="jenisKelamin" value="P" id="gender-p" required>
-                            <label class="radio-card-label" for="gender-p">
-                                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                Perempuan
-                            </label>
-                        </div>
+            <!-- Info Card -->
+            <div class="info-card">
+                <p class="flex items-center">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Masukkan teks review dalam Bahasa Indonesia untuk dianalisis sentimennya. Sistem akan mengklasifikasikan menjadi <strong>Positif</strong> atau <strong>Negatif</strong>.</span>
+                </p>
+            </div>
+
+            <form id="prediction-form" class="space-y-4" onsubmit="handlePrediction(event)">
+                <!-- Text Input -->
+                <div class="text-input-wrapper">
+                    <textarea
+                        id="review-text"
+                        name="text"
+                        class="text-input"
+                        placeholder="Ketik atau tempel review di sini...&#10;&#10;Contoh: Aplikasi ini sangat membantu untuk booking tiket kereta api. Tampilannya juga mudah dipahami."
+                        required
+                        maxlength="2000"
+                        oninput="updateCharCounter(this)"></textarea>
+                    <div class="char-counter">
+                        <span id="char-count">0</span>/2000 karakter
                     </div>
                 </div>
 
-                <!-- Nilai Akhir -->
-                <div class="floating-group">
-                    <input
-                        type="number"
-                        id="nilaiAkhir"
-                        name="nilaiAkhir"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        required
-                        class="floating-input"
-                        placeholder=" "
-                        oninput="this.classList.toggle('has-value', this.value !== '')">
-                    <label for="nilaiAkhir" class="floating-label">Nilai Akhir (0-100)</label>
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">0-100</div>
-                </div>
-
-                <!-- Ekstrakurikuler -->
-                <div class="custom-select-wrapper floating-group">
-                    <select
-                        id="ekstrakurikuler"
-                        name="ekstrakurikuler"
-                        required
-                        class="custom-select">
-                        <option value="">Pilih kegiatan ekstrakurikuler</option>
-                        <option value="TP">TP - Teknologi Populer</option>
-                        <option value="PK">PK - Pengetahuan Khusus</option>
-                        <option value="PM">PM - Pemimpin Masa Depan</option>
-                        <option value="PT">PT - Pengembangan Talent</option>
-                        <option value="PS">PS - Penunjang Studi</option>
-                    </select>
-                    <span class="select-arrow">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </span>
-                </div>
-
-                <!-- Organisasi -->
+                <!-- Sample Reviews -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-3">Pengalaman Organisasi</label>
-                    <div class="radio-card-group">
-                        <div class="radio-card">
-                            <input type="radio" name="organisasi" value="Ya" id="org-y" required>
-                            <label class="radio-card-label" for="org-y">Ya</label>
-                        </div>
-                        <div class="radio-card">
-                            <input type="radio" name="organisasi" value="Tidak" id="org-n" required>
-                            <label class="radio-card-label" for="org-n">Tidak</label>
-                        </div>
+                    <p class="text-sm font-medium text-slate-700 mb-2">Coba contoh review:</p>
+                    <div class="sample-reviews">
+                        <button type="button" class="sample-chip" onclick="useSample('positif-1')">
+                            Aplikasi sangat bagus
+                        </button>
+                        <button type="button" class="sample-chip" onclick="useSample('positif-2')">
+                            Mudah digunakan
+                        </button>
+                        <button type="button" class="sample-chip" onclick="useSample('negatif-1')">
+                            Sering error
+                        </button>
+                        <button type="button" class="sample-chip" onclick="useSample('negatif-2')">
+                            Lambat dan lemot
+                        </button>
                     </div>
-                </div>
-
-                <!-- Sertifikasi Profesi -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-3">Sertifikasi Profesi</label>
-                    <div class="radio-card-group">
-                        <div class="radio-card">
-                            <input type="radio" name="sertifikasiProfesi" value="Ya" id="cert-y" required>
-                            <label class="radio-card-label" for="cert-y">Ya</label>
-                        </div>
-                        <div class="radio-card">
-                            <input type="radio" name="sertifikasiProfesi" value="Tidak" id="cert-n" required>
-                            <label class="radio-card-label" for="cert-n">Tidak</label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tempat Magang -->
-                <div class="custom-select-wrapper floating-group">
-                    <select
-                        id="tempatMagang"
-                        name="tempatMagang"
-                        required
-                        class="custom-select">
-                        <option value="">Pilih tempat magang</option>
-                        <option value="Industri">Industri</option>
-                        <option value="Dinas">Dinas</option>
-                        <option value="Sekolah">Sekolah</option>
-                    </select>
-                    <span class="select-arrow">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </span>
-                </div>
-
-                <!-- Tempat Kerja -->
-                <div class="custom-select-wrapper floating-group">
-                    <select
-                        id="tempatKerja"
-                        name="tempatKerja"
-                        required
-                        class="custom-select">
-                        <option value="">Pilih tempat kerja</option>
-                        <option value="Industri">Industri</option>
-                        <option value="Dinas">Dinas</option>
-                        <option value="Sekolah">Sekolah</option>
-                    </select>
-                    <span class="select-arrow">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </span>
                 </div>
 
                 <!-- Submit Button -->
                 <button
                     type="submit"
                     id="predict-btn"
-                    class="w-full btn-primary text-white py-3.5 px-6 rounded-xl font-semibold text-base flex items-center justify-center">
+                    class="w-full btn-primary text-white py-3.5 px-6 rounded-xl font-semibold text-base flex items-center justify-center mt-6">
                     <svg id="predict-icon" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span id="predict-btn-text">Deteksi Sekarang</span>
+                    <span id="predict-btn-text">Analisis Sentimen</span>
                     <div id="predict-spinner" class="spinner hidden ml-2"></div>
                 </button>
             </form>
@@ -401,29 +264,32 @@
             <!-- Empty State -->
             <div id="result-empty" class="empty-state fade-in">
                 <svg class="mx-auto h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <h3 class="text-lg font-semibold text-slate-700 mb-2">Belum Ada Deteksi</h3>
-                <p class="text-slate-500 text-sm">Isi form dan klik "Deteksi Sekarang" untuk melihat hasil</p>
+                <h3 class="text-lg font-semibold text-slate-700 mb-2">Belum Ada Analisis</h3>
+                <p class="text-slate-500 text-sm">Masukkan review dan klik "Analisis Sentimen" untuk melihat hasil</p>
             </div>
 
             <!-- Result Content -->
             <div id="result-content" class="hidden space-y-6">
                 <!-- Prediction Result -->
-                <div class="result-card scale-in">
+                <div id="result-card" class="result-card scale-in">
                     <div class="relative z-10">
-                        <p class="text-white/80 text-sm font-medium mb-2">Hasil Deteksi</p>
+                        <p class="text-white/80 text-sm font-medium mb-2">Hasil Analisis</p>
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-white/70 text-xs">Tingkat Kepuasan</p>
+                                <p class="text-white/70 text-xs">Sentimen</p>
                                 <p id="predicted-class" class="text-4xl font-bold mt-1">-</p>
                             </div>
-                            <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <div class="sentiment-icon">
+                                <svg id="sentiment-icon" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <!-- Icon will be set dynamically -->
                                 </svg>
                             </div>
                         </div>
+                        <p class="text-white/80 text-sm mt-3">
+                            Confidence: <span id="confidence-value" class="font-bold">0%</span>
+                        </p>
                     </div>
                 </div>
 
@@ -435,22 +301,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                             </svg>
                         </span>
-                        Probabilitas Posterior
+                        Probabilitas
                     </h3>
                     <div id="posteriors-container" class="space-y-4"></div>
                 </div>
 
-                <!-- Likelihood Details -->
+                <!-- Input Text Display -->
                 <div class="bg-white rounded-xl border border-slate-200 p-6 fade-in-up">
-                    <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                        <span class="w-8 h-8 bg-lime-100 rounded-lg flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 text-lime-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </span>
-                        Detail Likelihood
-                    </h3>
-                    <div id="likelihoods-container" class="space-y-3"></div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-3">Teks Input</h3>
+                    <p id="input-text-display" class="text-slate-600 text-sm leading-relaxed"></p>
                 </div>
             </div>
         </div>
@@ -458,8 +317,27 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_js -->
 <script>
+    const SAMPLE_REVIEWS = {
+        'positif-1': 'Aplikasi ini sangat membantu untuk booking tiket kereta api. Tampilannya modern dan mudah dipahami.',
+        'positif-2': 'KAI Access aplikasinya bagus banget! Booking tiket jadi lebih mudah tanpa harus antri di stasiun. Terima kasih KAI!',
+        'negatif-1': 'Aplikasi sering error pas mau login. Sudah berulang kali dicoba tetap tidak bisa. Tolong diperbaiki.',
+        'negatif-2': 'Lemot banget loadingnya lama sekali. Padahal internet saya kencang. Sangat menjengkelkan saat mau booking tiket.'
+    };
+
+    function updateCharCounter(textarea) {
+        const count = textarea.value.length;
+        document.getElementById('char-count').textContent = count;
+    }
+
+    function useSample(key) {
+        const textarea = document.getElementById('review-text');
+        textarea.value = SAMPLE_REVIEWS[key];
+        updateCharCounter(textarea);
+        textarea.focus();
+    }
+
     function setPredictLoading(loading) {
         const btn = document.getElementById('predict-btn');
         const spinner = document.getElementById('predict-spinner');
@@ -471,41 +349,33 @@
         icon.classList.toggle('hidden', loading);
 
         if (loading) {
-            btnText.textContent = 'Memprediksi...';
+            btnText.textContent = 'Menganalisis...';
         } else {
-            btnText.textContent = 'Prediksi Sekarang';
+            btnText.textContent = 'Analisis Sentimen';
         }
     }
 
-    function createProgressBar(label, percentage, isHighlight = false) {
+    function createProgressBar(label, percentage, sentiment) {
+        const sentimentClass = sentiment === 'Positif' ? 'positif' : 'negatif';
         return `
             <div>
                 <div class="flex justify-between mb-2">
                     <span class="text-sm font-medium text-slate-700">${label}</span>
-                    <span class="text-sm font-bold ${isHighlight ? 'text-emerald-600' : 'text-slate-900'}">${percentage.toFixed(2)}%</span>
+                    <span class="text-sm font-bold text-slate-900">${percentage.toFixed(2)}%</span>
                 </div>
                 <div class="prob-bar">
-                    <div class="prob-fill ${isHighlight ? 'highlight' : ''}" style="width: 0%" data-width="${percentage}%"></div>
+                    <div class="prob-fill ${sentimentClass}" style="width: 0%" data-width="${percentage}%"></div>
                 </div>
             </div>
         `;
     }
 
-    function createLikelihoodItem(feature, className, value, isBest) {
-        return `
-            <div class="likelihood-item ${isBest ? 'best' : ''}">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <span class="w-2 h-2 rounded-full mr-3 ${isBest ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
-                        <div>
-                            <p class="text-xs text-slate-500">${feature}</p>
-                            <p class="text-sm font-semibold text-slate-900">${className}</p>
-                        </div>
-                    </div>
-                    <p class="text-sm font-bold ${isBest ? 'text-emerald-600' : 'text-slate-700'}">${value.toFixed(6)}</p>
-                </div>
-            </div>
-        `;
+    function getSentimentIcon(sentiment) {
+        if (sentiment === 'Positif') {
+            return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+        } else {
+            return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+        }
     }
 
     async function handlePrediction(event) {
@@ -513,24 +383,24 @@
 
         const form = event.target;
         const formData = new FormData(form);
+        const text = formData.get('text');
 
-        const data = {};
-        for (let [key, value] of formData.entries()) {
-            data[key] = value;
+        if (!text || text.trim().length === 0) {
+            showToast('Silakan masukkan teks review', 'error');
+            return;
         }
-        data.nilaiAkhir = parseFloat(data.nilaiAkhir);
 
         setPredictLoading(true);
 
         try {
-            const response = await apiCall('/predictions/predict', {
+            const response = await apiCall('/predictions/sentiment', {
                 method: 'POST',
-                body: JSON.stringify(data)
+                body: JSON.stringify({ text: text })
             });
 
             if (response.success) {
                 displayResults(response.data);
-                showToast('Prediksi berhasil!', 'success');
+                showToast('Analisis sentimen berhasil!', 'success');
             }
         } catch (error) {
             // Error handled by apiCall
@@ -545,16 +415,36 @@
         resultContent.classList.remove('hidden');
         resultContent.classList.add('fade-in');
 
-        document.getElementById('predicted-class').textContent = data.predicted_class;
+        // Update result card
+        const resultCard = document.getElementById('result-card');
+        const predictedClass = document.getElementById('predicted-class');
+        const sentimentIcon = document.getElementById('sentiment-icon');
+        const confidenceValue = document.getElementById('confidence-value');
 
+        // Remove old classes
+        resultCard.classList.remove('positif', 'negatif');
+
+        // Set sentiment-specific styling
+        if (data.predicted_class === 'Positif') {
+            resultCard.classList.add('positif');
+            predictedClass.textContent = 'Positif';
+            sentimentIcon.innerHTML = getSentimentIcon('Positif');
+        } else {
+            resultCard.classList.add('negatif');
+            predictedClass.textContent = 'Negatif';
+            sentimentIcon.innerHTML = getSentimentIcon('Negatif');
+        }
+
+        confidenceValue.textContent = (data.confidence * 100).toFixed(1) + '%';
+
+        // Display posteriors
         const posteriorsContainer = document.getElementById('posteriors-container');
         const posteriors = data.posteriors || {};
-        const maxPosterior = Math.max(...Object.values(posteriors));
-
         let posteriorsHTML = '';
+
         for (const [key, value] of Object.entries(posteriors)) {
             const percentage = value * 100;
-            posteriorsHTML += createProgressBar(key, percentage, value === maxPosterior);
+            posteriorsHTML += createProgressBar(key, percentage, key);
         }
         posteriorsContainer.innerHTML = posteriorsHTML;
 
@@ -565,19 +455,8 @@
             });
         }, 100);
 
-        const likelihoodsContainer = document.getElementById('likelihoods-container');
-        const likelihoods = data.likelihoods || {};
-
-        let likelihoodsHTML = '';
-        for (const [feature, values] of Object.entries(likelihoods)) {
-            const maxValue = Math.max(...Object.values(values));
-            const bestClass = Object.keys(values).find(key => values[key] === maxValue);
-
-            for (const [className, value] of Object.entries(values)) {
-                likelihoodsHTML += createLikelihoodItem(feature, className, value, className === bestClass);
-            }
-        }
-        likelihoodsContainer.innerHTML = likelihoodsHTML;
+        // Display input text
+        document.getElementById('input-text-display').textContent = data.text || '';
     }
 </script>
 {% endblock %}

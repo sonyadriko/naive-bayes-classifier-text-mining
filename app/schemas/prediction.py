@@ -1,12 +1,17 @@
-"""Prediction Pydantic schemas."""
+"""Prediction Pydantic schemas.
+
+Includes schemas for both categorical job placement prediction and text sentiment analysis.
+"""
 
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class PredictionRequest(BaseModel):
-    """Schema for prediction requests.
+# === Legacy Categorical Prediction Schemas ===
+
+class CategoricalPredictionRequest(BaseModel):
+    """Schema for categorical prediction requests (legacy).
 
     Features for predicting job placement duration.
     """
@@ -32,8 +37,37 @@ class LikelihoodDetail(BaseModel):
     tempatKerja: float = Field(..., description="Likelihood for workplace")
 
 
+# === Sentiment Analysis Schemas ===
+
+class SentimentPredictionRequest(BaseModel):
+    """Schema for sentiment prediction requests.
+
+    Input text for sentiment analysis.
+    """
+
+    text: str = Field(..., min_length=1, description="Text to analyze for sentiment")
+
+
+class BatchSentimentRequest(BaseModel):
+    """Schema for batch sentiment prediction requests."""
+
+    texts: list[str] = Field(..., min_items=1, max_items=100, description="List of texts to analyze")
+
+
+# === Response Schemas ===
+
+class SentimentPredictionResponse(BaseModel):
+    """Schema for sentiment prediction response."""
+
+    text: str = Field(..., description="Input text")
+    predicted_class: str = Field(..., description="Predicted sentiment (Positif/Negatif)")
+    confidence: float = Field(..., description="Confidence score (0-1)")
+    posteriors: dict[str, float] = Field(..., description="Posterior probabilities")
+    priors: dict[str, float] = Field(..., description="Prior probabilities")
+
+
 class PredictionResponse(BaseModel):
-    """Schema for prediction response."""
+    """Schema for categorical prediction response (legacy)."""
 
     predicted_class: str | int = Field(..., description="Predicted class")
     posteriors: dict[str, float] = Field(..., description="Posterior probabilities")
@@ -62,3 +96,12 @@ class ConfusionMatrixResponse(BaseModel):
     precision: float = Field(..., description="Model precision")
     recall: float = Field(..., description="Model recall")
     f1_score: float = Field(..., description="F1 score")
+
+
+class TrainModelRequest(BaseModel):
+    """Schema for training model requests."""
+
+    force_retrain: bool = Field(
+        default=False,
+        description="Force retraining even if cached model exists",
+    )
