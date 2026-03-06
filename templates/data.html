@@ -602,7 +602,9 @@
             dataTable = null;
         }
 
-        const headers = Object.keys(currentData[0]);
+        // Filter out unwanted columns
+        const excludedColumns = ['replyContent', 'repliedAt', 'reply_content', 'replied_at'];
+        const headers = Object.keys(currentData[0]).filter(h => !excludedColumns.includes(h));
         const tableHead = document.getElementById('table-head');
         const tableBody = document.getElementById('table-body');
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Deteksi Kepuasan Pengguna KAI{% endblock %}
+{% block title %}Dashboard - Analisis Sentimen KAI Access{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -66,6 +66,27 @@
     }
 
     .gradient-card .stat-label {
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    /* Sentiment Cards */
+    .sentiment-card-positif {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+
+    .sentiment-card-negatif {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+    }
+
+    .sentiment-card-positif .stat-value,
+    .sentiment-card-negatif .stat-value {
+        color: white;
+    }
+
+    .sentiment-card-positif .stat-label,
+    .sentiment-card-negatif .stat-label {
         color: rgba(255, 255, 255, 0.85);
     }
 
@@ -185,6 +206,107 @@
         border-radius: 0.75rem;
         padding: 0.75rem;
     }
+
+    /* Status Badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.875rem;
+        border-radius: 2rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+
+    .status-badge.trained {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-badge.not-trained {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    /* Sentiment Distribution Bar */
+    .sentiment-bar {
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 1rem;
+        overflow: hidden;
+        display: flex;
+    }
+
+    .sentiment-bar-fill {
+        height: 100%;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sentiment-bar-fill.positif {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .sentiment-bar-fill.negatif {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    /* Model Info Section */
+    .model-info-section {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        background: white;
+        color: #10b981;
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    /* Loading Skeleton */
+    .skeleton {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    .skeleton-text {
+        height: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .skeleton-value {
+        height: 2.5rem;
+        width: 100px;
+    }
 </style>
 {% endblock %}
 
@@ -207,12 +329,12 @@
                         Selamat Datang, <span id="welcome-user-name">User</span>!
                     </h1>
                     <p class="text-white/80 text-lg max-w-2xl">
-                        Sistem Deteksi Tingkat Kepuasan Pengguna Access by KAI menggunakan Naive Bayes Classifier
+                        Analisis Sentimen Review KAI Access menggunakan Multinomial Naive Bayes Classifier
                     </p>
                 </div>
                 <div class="hidden md:block glass-icon mt-4 md:mt-0">
                     <svg class="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                 </div>
             </div>
@@ -221,37 +343,16 @@
 
     <!-- Stats Bento Grid -->
     <div class="bento-grid mb-8">
-        <!-- Total Data Training -->
+        <!-- Total Reviews -->
         <div class="bento-card gradient-card stagger-1 fade-in-up" style="--gradient-from: #10b981; --gradient-to: #059669;">
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="stat-label text-sm font-medium mb-2">Total Data Survey</p>
-                    <p id="total-data" class="stat-value">-</p>
+                    <p class="stat-label text-sm font-medium mb-2">Total Reviews</p>
+                    <p id="total-reviews" class="stat-value">-</p>
                 </div>
                 <div class="bg-white/20 rounded-xl p-3">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                    </svg>
-                </div>
-            </div>
-            <div class="mt-4 flex items-center text-sm text-white/70">
-                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                <span>Data yang tersedia untuk training</span>
-            </div>
-        </div>
-
-        <!-- Fitur Model -->
-        <div class="bento-card gradient-card stagger-2 fade-in-up" style="--gradient-from: #14b8a6; --gradient-to: #0d9488;">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="stat-label text-sm font-medium mb-2">Fitur Model</p>
-                    <p id="total-features" class="stat-value">-</p>
-                </div>
-                <div class="bg-white/20 rounded-xl p-3">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                 </div>
             </div>
@@ -259,28 +360,135 @@
                 <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Parameter untuk prediksi</span>
+                <span>Review yang tersedia</span>
             </div>
         </div>
 
-        <!-- Kelas Target -->
-        <div class="bento-card gradient-card stagger-3 fade-in-up" style="--gradient-from: #a3e635; --gradient-to: #84cc16;">
+        <!-- Sentimen Positif -->
+        <div class="bento-card sentiment-card-positif stagger-2 fade-in-up">
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="stat-label text-sm font-medium mb-2">Kelas Target</p>
-                    <p id="total-classes" class="stat-value">-</p>
+                    <p class="stat-label text-sm font-medium mb-2">Sentimen Positif</p>
+                    <p id="positif-count" class="stat-value">-</p>
                 </div>
                 <div class="bg-white/20 rounded-xl p-3">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
-            <div class="mt-4 flex items-center text-sm text-white/70">
+            <div class="mt-4 flex items-center justify-between text-sm text-white/70">
+                <span id="positif-percent">0%</span>
+                <span> dari total</span>
+            </div>
+        </div>
+
+        <!-- Sentimen Negatif -->
+        <div class="bento-card sentiment-card-negatif stagger-3 fade-in-up">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="stat-label text-sm font-medium mb-2">Sentimen Negatif</p>
+                    <p id="negatif-count" class="stat-value">-</p>
+                </div>
+                <div class="bg-white/20 rounded-xl p-3">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between text-sm text-white/70">
+                <span id="negatif-percent">0%</span>
+                <span> dari total</span>
+            </div>
+        </div>
+
+        <!-- Model Status -->
+        <div class="bento-card stagger-4 fade-in-up">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 mb-2">Status Model</p>
+                    <div id="model-status-badge" class="status-badge not-trained">
+                        <span class="w-2 h-2 bg-current rounded-full mr-2"></span>
+                        <span id="model-status-text">Not Trained</span>
+                    </div>
+                </div>
+                <div class="bg-emerald-100 rounded-xl p-3">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm text-slate-500">
+                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Multinomial Naive Bayes</span>
+            </div>
+        </div>
+
+        <!-- Vocabulary Size -->
+        <div class="bento-card stagger-5 fade-in-up">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 mb-2">Vocabulary Size</p>
+                    <p id="vocabulary-size" class="stat-value">-</p>
+                </div>
+                <div class="bg-teal-100 rounded-xl p-3">
+                    <svg class="w-6 h-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm text-slate-500">
                 <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                 </svg>
-                <span>Kategori hasil prediksi</span>
+                <span>Kata dalam vocabulary</span>
+            </div>
+        </div>
+
+        <!-- Last Trained -->
+        <div class="bento-card stagger-6 fade-in-up">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 mb-2">Terakhir Dilatih</p>
+                    <p id="last-trained" class="text-lg font-bold text-slate-900">-</p>
+                </div>
+                <div class="bg-lime-100 rounded-xl p-3">
+                    <svg class="w-6 h-6 text-lime-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm text-slate-500">
+                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Waktu training terakhir</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sentiment Distribution Bar -->
+    <div id="sentiment-distribution-section" class="bento-card mb-8 fade-in-up hidden">
+        <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+            </svg>
+            Distribusi Sentimen
+        </h3>
+        <div class="sentiment-bar">
+            <div id="positif-bar" class="sentiment-bar-fill positif" style="width: 0%"></div>
+            <div id="negatif-bar" class="sentiment-bar-fill negatif" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between mt-3 text-sm">
+            <div class="flex items-center">
+                <span class="w-3 h-3 bg-emerald-600 rounded-full mr-2"></span>
+                <span class="text-slate-600">Positif: <strong id="positif-dist-label">0</strong></span>
+            </div>
+            <div class="flex items-center">
+                <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                <span class="text-slate-600">Negatif: <strong id="negatif-dist-label">0</strong></span>
             </div>
         </div>
     </div>
@@ -294,34 +502,34 @@
     </h2>
 
     <div class="bento-grid mb-8">
-        <!-- Prediction Card -->
-        <a href="/prediction" class="nav-card stagger-4 fade-in-up"
+        <!-- Sentiment Analysis Card -->
+        <a href="/prediction" class="nav-card stagger-1 fade-in-up"
            style="--icon-bg: #ecfdf5; --icon-color: #10b981; --hover-color: #10b981;">
             <div class="icon-wrapper">
                 <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">Prediksi</h3>
-            <p class="text-sm text-slate-500 mb-3">Lakukan prediksi penempatan kerja siswa</p>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Analisis Sentimen</h3>
+            <p class="text-sm text-slate-500 mb-3">Analisis sentimen review aplikasi KAI Access</p>
             <div class="flex items-center text-sm font-medium" style="color: var(--hover-color);">
-                Mulai Prediksi
+                Mulai Analisis
                 <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
             </div>
         </a>
 
-        <!-- Data Training Card -->
-        <a href="/data" class="nav-card stagger-5 fade-in-up"
+        <!-- Data Review Card -->
+        <a href="/data" class="nav-card stagger-2 fade-in-up"
            style="--icon-bg: #f0fdfa; --icon-color: #14b8a6; --hover-color: #14b8a6;">
             <div class="icon-wrapper">
                 <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">Data Survey</h3>
-            <p class="text-sm text-slate-500 mb-3">Upload dan kelola data survey</p>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Data Review</h3>
+            <p class="text-sm text-slate-500 mb-3">Upload dan kelola data review untuk training</p>
             <div class="flex items-center text-sm font-medium" style="color: var(--hover-color);">
                 Kelola Data
                 <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,8 +538,26 @@
             </div>
         </a>
 
+        <!-- Scraper Card -->
+        <a href="/scraper" class="nav-card stagger-3 fade-in-up"
+           style="--icon-bg: #fef3c7; --icon-color: #f59e0b; --hover-color: #f59e0b;">
+            <div class="icon-wrapper">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Scraper</h3>
+            <p class="text-sm text-slate-500 mb-3">Ambil review dari Google Play Store</p>
+            <div class="flex items-center text-sm font-medium" style="color: var(--hover-color);">
+                Mulai Scraping
+                <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </a>
+
         <!-- Evaluation Card -->
-        <a href="/evaluation" class="nav-card stagger-6 fade-in-up"
+        <a href="/evaluation" class="nav-card stagger-4 fade-in-up"
            style="--icon-bg: #fefce8; --icon-color: #a3e635; --hover-color: #a3e635;">
             <div class="icon-wrapper">
                 <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -339,7 +565,7 @@
                 </svg>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-1">Evaluasi Model</h3>
-            <p class="text-sm text-slate-500 mb-3">Analisis performa model</p>
+            <p class="text-sm text-slate-500 mb-3">Analisis performa model klasifikasi</p>
             <div class="flex items-center text-sm font-medium" style="color: var(--hover-color);">
                 Lihat Evaluasi
                 <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -359,35 +585,40 @@
         </h2>
         <div class="prose prose-slate max-w-none">
             <p class="text-slate-600 mb-4">
-                Sistem ini menggunakan algoritma <strong>Naive Bayes Classifier</strong> untuk mendeteksi tingkat kepuasan
-                pengguna aplikasi Access by KAI berdasarkan berbagai fitur seperti:
+                Sistem ini menggunakan algoritma <strong>Multinomial Naive Bayes</strong> untuk menganalisis sentimen
+                review aplikasi KAI Access dari Google Play Store. Review diklasifikasikan menjadi <strong>Positif</strong> atau <strong>Negatif</strong>.
             </p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <h3 class="text-sm font-bold text-slate-900 mb-3">Pipeline Text Preprocessing:</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
                 <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
                     <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                    <span class="text-sm text-slate-700">Kemudahan Akses</span>
+                    <span class="text-sm text-slate-700">Case Folding</span>
                 </div>
                 <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
                     <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                    <span class="text-sm text-slate-700">Kecepatan Aplikasi</span>
-                </div>
-                <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                    <span class="text-sm text-slate-700">Kualitas Layanan</span>
+                    <span class="text-sm text-slate-700">Cleaning</span>
                 </div>
                 <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
                     <span class="w-2 h-2 bg-teal-500 rounded-full mr-2"></span>
-                    <span class="text-sm text-slate-700">User Interface</span>
+                    <span class="text-sm text-slate-700">Tokenization</span>
                 </div>
                 <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
                     <span class="w-2 h-2 bg-teal-500 rounded-full mr-2"></span>
-                    <span class="text-sm text-slate-700">Fitur Tiket</span>
+                    <span class="text-sm text-slate-700">Stopword Removal</span>
                 </div>
                 <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
                     <span class="w-2 h-2 bg-lime-500 rounded-full mr-2"></span>
-                    <span class="text-sm text-slate-700">Tingkat Kepuasan</span>
+                    <span class="text-sm text-slate-700">Normalization</span>
+                </div>
+                <div class="flex items-center px-3 py-2 bg-slate-50 rounded-lg">
+                    <span class="w-2 h-2 bg-lime-500 rounded-full mr-2"></span>
+                    <span class="text-sm text-slate-700">Stemming</span>
                 </div>
             </div>
+            <p class="text-slate-600 text-sm">
+                Data review diambil menggunakan <strong>Google Play Scraper</strong> dan dilabeli secara otomatis berdasarkan rating pengguna
+                (Rating 4-5 = Positif, Rating 1-2 = Negatif).
+            </p>
         </div>
     </div>
 </div>
@@ -397,6 +628,8 @@
 <script>
     function animateCounter(elementId, targetValue, duration = 1000) {
         const element = document.getElementById(elementId);
+        if (!element) return;
+
         const startValue = 0;
         const increment = targetValue / (duration / 16);
         let currentValue = startValue;
@@ -404,28 +637,119 @@
         const timer = setInterval(() => {
             currentValue += increment;
             if (currentValue >= targetValue) {
-                element.textContent = targetValue;
+                element.textContent = targetValue.toLocaleString('id-ID');
                 clearInterval(timer);
             } else {
-                element.textContent = Math.floor(currentValue);
+                element.textContent = Math.floor(currentValue).toLocaleString('id-ID');
             }
         }, 16);
     }
 
-    async function loadStats() {
+    async function loadModelInfo() {
         try {
-            const response = await apiCall('/data/info', { silentError: true });
+            const response = await apiCall('/predictions/model/info', { silentError: true });
             if (response.success) {
-                animateCounter('total-data', response.data.total_rows || 0, 1500);
-                animateCounter('total-features', response.data.total_features || 0, 1200);
-                animateCounter('total-classes', response.data.target_classes || 0, 1000);
+                const data = response.data;
+
+                // Update model status
+                const statusBadge = document.getElementById('model-status-badge');
+                const statusText = document.getElementById('model-status-text');
+
+                if (data.is_trained) {
+                    statusBadge.classList.remove('not-trained');
+                    statusBadge.classList.add('trained');
+                    statusText.textContent = 'Trained';
+                } else {
+                    statusBadge.classList.remove('trained');
+                    statusBadge.classList.add('not-trained');
+                    statusText.textContent = 'Not Trained';
+                }
+
+                // Update vocabulary size
+                if (data.vocabulary_size) {
+                    animateCounter('vocabulary-size', data.vocabulary_size, 800);
+                } else {
+                    document.getElementById('vocabulary-size').textContent = '0';
+                }
+
+                // Update last trained
+                const lastTrainedEl = document.getElementById('last-trained');
+                if (data.last_trained) {
+                    // Parse UTC date and manually add 7 hours for WIB
+                    const utcDate = new Date(data.last_trained);
+                    const wibDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
+                    lastTrainedEl.textContent = wibDate.toLocaleString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) + ' WIB';
+                } else {
+                    lastTrainedEl.textContent = '-';
+                }
             }
         } catch (error) {
-            console.error('Failed to load stats:', error);
+            console.error('Failed to load model info:', error);
             // Set default values on error
-            document.getElementById('total-data').textContent = '0';
-            document.getElementById('total-features').textContent = '0';
-            document.getElementById('total-classes').textContent = '0';
+            document.getElementById('model-status-text').textContent = 'Not Trained';
+            document.getElementById('vocabulary-size').textContent = '0';
+            document.getElementById('last-trained').textContent = '-';
+        }
+    }
+
+    async function loadScraperStatus() {
+        try {
+            const response = await apiCall('/scraper/status', { silentError: true });
+            if (response.success) {
+                const data = response.data;
+
+                // Update total reviews
+                const totalReviews = data.total_reviews || 0;
+                animateCounter('total-reviews', totalReviews, 1000);
+
+                // Get sentiment distribution
+                const sentimentDist = data.sentiment_distribution || {};
+                const positif = sentimentDist.Positif || 0;
+                const negatif = sentimentDist.Negatif || 0;
+
+                // Update sentiment counts
+                animateCounter('positif-count', positif, 800);
+                animateCounter('negatif-count', negatif, 800);
+
+                // Calculate and update percentages
+                if (totalReviews > 0) {
+                    const positifPercent = ((positif / totalReviews) * 100).toFixed(1);
+                    const negatifPercent = ((negatif / totalReviews) * 100).toFixed(1);
+
+                    document.getElementById('positif-percent').textContent = positifPercent + '%';
+                    document.getElementById('negatif-percent').textContent = negatifPercent + '%';
+
+                    // Show and update sentiment distribution bar
+                    const distSection = document.getElementById('sentiment-distribution-section');
+                    distSection.classList.remove('hidden');
+
+                    document.getElementById('positif-dist-label').textContent = positif + ' (' + positifPercent + '%)';
+                    document.getElementById('negatif-dist-label').textContent = negatif + ' (' + negatifPercent + '%)';
+
+                    // Animate the bar
+                    setTimeout(() => {
+                        document.getElementById('positif-bar').style.width = positifPercent + '%';
+                        document.getElementById('negatif-bar').style.width = negatifPercent + '%';
+                    }, 100);
+                } else {
+                    document.getElementById('positif-percent').textContent = '0%';
+                    document.getElementById('negatif-percent').textContent = '0%';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load scraper status:', error);
+            // Set default values on error
+            document.getElementById('total-reviews').textContent = '0';
+            document.getElementById('positif-count').textContent = '0';
+            document.getElementById('negatif-count').textContent = '0';
+            document.getElementById('positif-percent').textContent = '0%';
+            document.getElementById('negatif-percent').textContent = '0%';
         }
     }
 
@@ -444,8 +768,9 @@
             }
         }
 
-        // Small delay for animation effect
-        setTimeout(loadStats, 300);
+        // Load all dashboard data
+        loadModelInfo();
+        loadScraperStatus();
     });
 </script>
 {% endblock %}

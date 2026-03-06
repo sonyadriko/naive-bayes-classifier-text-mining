@@ -386,7 +386,7 @@
                         </svg>
                     </div>
                     <p class="text-sm text-slate-500">
-                        &copy; 2024 Analisis Sentimen KAI Access with Naive Bayes.
+                        &copy; <span id="current-year"></span> Analisis Sentimen KAI Access with Naive Bayes.
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -402,6 +402,9 @@
 
     <!-- Common JavaScript -->
     <script>
+        // Set current year dynamically
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
         const API_BASE = '/api/v1';
 
         // Toast notification function with Sonner-style design
