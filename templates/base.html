@@ -407,7 +407,10 @@
     <!-- Common JavaScript -->
     <script>
         // Set current year dynamically
-        document.getElementById('current-year').textContent = new Date().getFullYear();
+        const currentYearEl = document.getElementById('current-year');
+        if (currentYearEl) {
+            currentYearEl.textContent = new Date().getFullYear();
+        }
 
         const API_BASE = '/api/v1';
 
@@ -561,19 +564,22 @@
             const userName = document.getElementById('user-name');
             const userInitial = document.getElementById('user-initial');
 
+            // Skip if navbar doesn't exist (e.g., on login page)
+            if (!desktopNav || !loginBtn) return;
+
             if (token && user) {
                 // User is logged in - show nav and logout, hide login button
-                if (desktopNav) desktopNav.classList.remove('hidden');
+                desktopNav.classList.remove('hidden');
                 if (loggedInState) loggedInState.classList.remove('hidden');
-                if (loginBtn) loginBtn.classList.add('hidden');
+                loginBtn.classList.add('hidden');
                 if (mobileNav) mobileNav.classList.remove('hidden');
                 if (userName) userName.textContent = user.name;
                 if (userInitial) userInitial.textContent = user.name.charAt(0).toUpperCase();
             } else {
                 // User is logged out - hide nav and logout, show login button
-                if (desktopNav) desktopNav.classList.add('hidden');
+                desktopNav.classList.add('hidden');
                 if (loggedInState) loggedInState.classList.add('hidden');
-                if (loginBtn) loginBtn.classList.remove('hidden');
+                loginBtn.classList.remove('hidden');
                 if (mobileNav) mobileNav.classList.add('hidden');
             }
         }
@@ -583,10 +589,16 @@
 
         // Set active nav link based on current path
         function setActiveNavLink() {
+            const desktopNav = document.getElementById('desktop-nav');
+            const mobileNav = document.getElementById('mobile-nav');
+
+            // Skip if navbar doesn't exist (e.g., on login page)
+            if (!desktopNav || !mobileNav) return;
+
             const currentPath = window.location.pathname;
 
             // Desktop nav links
-            document.querySelectorAll('#desktop-nav .nav-link').forEach(link => {
+            desktopNav.querySelectorAll('.nav-link').forEach(link => {
                 const href = link.getAttribute('href');
                 if (href === currentPath || (currentPath.startsWith(href) && href !== '/')) {
                     link.classList.add('active');
@@ -596,7 +608,7 @@
             });
 
             // Mobile nav links
-            document.querySelectorAll('#mobile-nav a').forEach(link => {
+            mobileNav.querySelectorAll('a').forEach(link => {
                 const href = link.getAttribute('href');
                 if (href === currentPath || (currentPath.startsWith(href) && href !== '/')) {
                     link.classList.add('active');
