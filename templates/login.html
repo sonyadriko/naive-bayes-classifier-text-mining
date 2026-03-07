@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 
+{% block navbar %}{% endblock navbar %}
+{% block footer %}{% endblock footer %}
+
 {% block title %}Login - Deteksi Kepuasan Pengguna KAI{% endblock %}
 
 {% block extra_css %}
 <style>
     /* Split Screen Layout */
     .login-container {
-        min-height: calc(100vh - 200px);
+        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;

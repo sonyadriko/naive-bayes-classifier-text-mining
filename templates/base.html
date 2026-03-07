@@ -283,8 +283,9 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col">
+    {% block navbar %}
     <!-- Navbar with Glassmorphism -->
-    <nav class="glass sticky top-0 z-50">
+    <nav class="glass sticky top-0 z-50" id="main-navbar">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -366,6 +367,7 @@
             </div>
         </div>
     </nav>
+    {% endblock navbar %}
 
     <!-- Toast Notification Container -->
     <div id="toast-container"></div>
@@ -375,6 +377,7 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% block footer %}
     <!-- Footer -->
     <footer class="border-t border-slate-200/60 bg-white/50 backdrop-blur-sm mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -399,6 +402,7 @@
             </div>
         </div>
     </footer>
+    {% endblock footer %}
 
     <!-- Common JavaScript -->
     <script>
@@ -527,14 +531,23 @@
             const publicPaths = ['/login', '/register'];
             const isPublicPath = publicPaths.includes(currentPath);
 
+            // Redirect to login if not authenticated and not on public page
             if (!token && !isPublicPath) {
                 window.location.href = '/login';
+                return false;
             }
 
+            // Redirect to dashboard if authenticated and on public page
             if (token && isPublicPath) {
                 window.location.href = '/dashboard';
+                return false;
             }
+
+            return true;
         }
+
+        // Check auth immediately
+        checkAuth();
 
         // Update auth UI based on localStorage
         function updateAuthUI() {
