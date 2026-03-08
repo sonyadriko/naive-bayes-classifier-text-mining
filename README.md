@@ -5,7 +5,8 @@ A FastAPI backend for sentiment analysis of KAI Access app reviews using Multino
 ## Features
 
 - **Text Sentiment Analysis**: Classify Indonesian text reviews using Multinomial Naive Bayes
-- **Google Play Store Scraper**: Fetch KAI Access reviews automatically
+- **Google Play Store Scraper**: Fetch KAI Access reviews automatically (Python library)
+- **Web Dashboard**: Interactive UI for sentiment analysis, scraping, and model evaluation
 - **Indonesian Text Preprocessing**: Complete pipeline for Bahasa Indonesia text processing
   - Case folding, cleaning, tokenization
   - Stopword removal
@@ -23,7 +24,9 @@ naive-bayes-classifier/
 ├── main.py                 # Application entry point
 ├── dependencies.py         # Dependency injection providers
 ├── dependencies.txt        # Python dependencies
-├── package.json           # Node.js dependencies (for scraper)
+├── docker-compose.yml      # Docker compose configuration
+├── Dockerfile              # Multi-stage Docker build
+├── Makefile                # Docker commands
 ├── .env                    # Environment configuration
 │
 ├── app/
@@ -74,8 +77,10 @@ naive-bayes-classifier/
 │
 ├── templates/             # Web UI templates
 │   ├── base.html
+│   ├── login.html         # Login/register page
+│   ├── dashboard.html     # Dashboard page
 │   ├── prediction.html    # Sentiment analysis UI
-│   ├── scraper.html       # Scraper UI (NEW)
+│   ├── scraper.html       # Scraper UI
 │   ├── data.html
 │   └── evaluation.html
 │
@@ -109,31 +114,33 @@ data/
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-# Install Python dependencies
+# Install Python dependencies (includes google-play-scraper)
 pip install -r dependencies.txt
 ```
 
-### 2. Node.js Dependencies (for Scraper)
-
-```bash
-# Install Node.js from https://nodejs.org/
-
-# Install npm package
-npm install
-```
-
-### 3. Configure Environment
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
-### 4. Database (Optional)
+### 3. Database (Optional - for user management)
 
 ```bash
 mysql -u root -p
 CREATE DATABASE naive_bayes;
+```
+
+### Docker (Recommended)
+
+```bash
+# Build and start all services
+make up
+
+# API will be available at http://localhost:8000
+# MySQL at localhost:3306
+# Adminer (DB UI) at http://localhost:8080 (enable with --profile tools)
 ```
 
 ## Running the Application
@@ -150,12 +157,32 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
+### Docker Commands
+
+```bash
+make up           # Start development environment
+make down         # Stop development environment
+make logs         # View logs from all services
+make logs-api     # View API logs
+make logs-db      # View MySQL logs
+make shell        # Open shell in API container
+make test         # Run tests in container
+make db-migrate   # Initialize database
+make db-shell     # Open MySQL shell
+```
+
 ## API Documentation
 
 Once running, access:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
-- Web UI: `http://localhost:8000/prediction`
+- Web UI:
+  - `http://localhost:8000/login` - Login/Register
+  - `http://localhost:8000/dashboard` - Dashboard
+  - `http://localhost:8000/prediction` - Sentiment Analysis
+  - `http://localhost:8000/scraper` - Google Play Scraper
+  - `http://localhost:8000/data` - Data Upload
+  - `http://localhost:8000/evaluation` - Model Evaluation
 
 ## API Endpoints
 
@@ -163,8 +190,6 @@ Once running, access:
 
 - `POST /api/v1/scraper/reviews` - Scrape KAI Access reviews
 - `GET /api/v1/scraper/status` - Get scraped data status
-- `GET /api/v1/scraper/dependencies` - Check if Node.js dependencies are installed
-- `POST /api/v1/scraper/install` - Install google-play-scraper
 
 ### Sentiment Prediction
 

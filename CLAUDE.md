@@ -21,9 +21,6 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # Install Python dependencies
 pip install -r dependencies.txt
 pip install -r dependencies-dev.txt  # dev dependencies
-
-# Install npm dependencies (for scraper)
-npm install
 ```
 
 ### Testing
@@ -35,10 +32,15 @@ pytest --cov=app --cov-report=html  # With coverage
 
 ### Docker (via Make)
 ```bash
-make up       # Start development environment
-make down     # Stop development environment
-make test     # Run tests in container
-make shell    # Open shell in API container
+make up           # Start development environment (API on port 8000)
+make down         # Stop development environment
+make test         # Run tests in container
+make shell        # Open shell in API container
+make logs         # View logs from all services
+make logs-api     # View logs from API service
+make logs-db      # View logs from MySQL service
+make db-migrate   # Initialize database
+make db-shell     # Open MySQL shell
 ```
 
 ## Architecture
@@ -111,7 +113,7 @@ scraper = GooglePlayScraper()
 result = scraper.scrape_and_save(max_reviews=100, sort_by="newest")
 ```
 
-Uses `google-play-scraper` (npm) via subprocess. KAI Access app ID: `com.kai.kaiticketing`
+Uses `google-play-scraper` Python library (not npm). KAI Access app ID: `com.kai.kaiticketing`
 
 ### Configuration
 
@@ -136,12 +138,6 @@ POST /api/v1/scraper/reviews
 
 GET /api/v1/scraper/status
   Response: { "data": { "total_reviews": 1500, "sentiment_distribution": {...} } }
-
-GET /api/v1/scraper/dependencies
-  Response: { "data": { "has_node": true, "has_scraper": true } }
-
-POST /api/v1/scraper/install
-  Response: { "data": { "installed": true } }
 ```
 
 ### Sentiment Prediction
@@ -171,6 +167,8 @@ POST /api/v1/data/upload
 
 ### Web Routes
 ```
+GET /login       - Login/register page
+GET /dashboard   - Dashboard page
 GET /scraper     - Scraper UI page
 GET /prediction  - Sentiment analysis UI page
 GET /data        - Data upload UI page
@@ -204,8 +202,9 @@ content,preprocessed,sentiment
 naive-bayes-classifier/
 ├── main.py                  # FastAPI app entry point
 ├── dependencies.py          # Dependency injection providers
-├── package.json             # Node.js dependencies (google-play-scraper)
 ├── Makefile                 # Docker commands
+├── docker-compose.yml       # Docker compose configuration
+├── Dockerfile               # Multi-stage Docker build (port 8050 internal)
 │
 ├── app/
 │   ├── api/v1/
@@ -257,6 +256,8 @@ naive-bayes-classifier/
 │
 ├── templates/
 │   ├── base.html
+│   ├── login.html           # Login/register page
+│   ├── dashboard.html       # Dashboard page
 │   ├── prediction.html      # Sentiment analysis UI
 │   ├── scraper.html         # Scraper UI
 │   ├── data.html            # Data upload UI
@@ -278,9 +279,7 @@ naive-bayes-classifier/
 - `scikit-learn` - Evaluation metrics
 - `sastrawi` - Indonesian stemming
 - `nltk` - NLP utilities (stopwords)
-
-### Node.js (for scraper)
-- `google-play-scraper` - Google Play Store reviews scraper
+- `google-play-scraper` - Google Play Store reviews scraper (Python library)
 
 ## Legacy Features (Deprecated)
 
