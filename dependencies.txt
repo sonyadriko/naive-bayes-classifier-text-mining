@@ -16,3 +16,5 @@ nltk==3.8.1
 sastrawi==1.0.1
 google-play-scraper>=1.2.0
 email-validator==2.1.0
+aiofiles==23.2.1
+python-dotenv==1.0.0
