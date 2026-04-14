@@ -143,7 +143,9 @@ class DataService:
                 data = pd.read_excel(data_path)
 
             # Replace NaN values with None for JSON serialization
-            return Ok(data.where(pd.notnull(data), None).to_dict(orient="records"))
+            # First fill object columns with empty string, then replace all NaN
+            data = data.fillna("").replace({float("nan"): None})
+            return Ok(data.to_dict(orient="records"))
 
         except Exception as e:
             return Err(f"Failed to read data: {str(e)}")
