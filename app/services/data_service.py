@@ -301,8 +301,8 @@ class DataService:
                 {
                     "message": "File processed successfully",
                     "file_path": str(processed_path),
-                    "rows": len(data),
-                    "has_scores": data["score"].notna().any(),
+                    "rows": int(len(data)),
+                    "has_scores": bool(data["score"].notna().any()),
                 }
             )
 
@@ -480,3 +480,43 @@ class DataService:
             Hash string.
         """
         return hashlib.sha256(content).hexdigest()[:16]
+
+    def delete_training_data(self) -> Result[dict[str, Any], str]:
+        """Delete training data files.
+
+        Returns:
+            Ok(dict with deletion info) if successful, Err with message if failed.
+        """
+        try:
+            deleted_files = []
+
+            # Delete reviews.csv
+            reviews_path = self.data_dir / "reviews.csv"
+            if reviews_path.exists():
+                reviews_path.unlink()
+                deleted_files.append("reviews.csv")
+
+            # Delete reviews_preprocessed.csv
+            preprocessed_path = self.data_dir / "reviews_preprocessed.csv"
+            if preprocessed_path.exists():
+                preprocessed_path.unlink()
+                deleted_files.append("reviews_preprocessed.csv")
+
+            # Delete data.xlsx (legacy categorical data)
+            data_path = self.data_dir / "data.xlsx"
+            if data_path.exists():
+                data_path.unlink()
+                deleted_files.append("data.xlsx")
+
+            if not deleted_files:
+                return Err("No training data files found to delete")
+
+            return Ok(
+                {
+                    "message": "Training data deleted successfully",
+                    "deleted_files": deleted_files,
+                }
+            )
+
+        except Exception as e:
+            return Err(f"Failed to delete training data: {str(e)}")

@@ -29,16 +29,16 @@ DataService = Annotated[DataService, Depends(get_data_service)]
 @router.post(
     "/upload",
     summary="Upload training data",
-    description="Upload an Excel file with training data for the model",
+    description="Upload an Excel/CSV file with training data for the model",
 )
 async def upload_file(
     data_service: DataService,
-    file: UploadFile = File(..., description="Excel file with training data"),
+    file: UploadFile = File(..., description="Excel/CSV file with training data"),
 ) -> JSONResponse:
-    """Upload and process Excel file.
+    """Upload and process Excel/CSV file.
 
     Args:
-        file: Uploaded Excel file.
+        file: Uploaded Excel/CSV file.
         data_service: Data service instance.
 
     Returns:
@@ -47,8 +47,29 @@ async def upload_file(
     # Read file content
     content = await file.read()
 
-    # Process file
-    result = data_service.process_upload(content, file.filename)
+    # Detect file type and use appropriate processor
+    # For CSV or files with 'content' column, use text upload processor
+    is_csv = file.filename and file.filename.endswith('.csv')
+
+    if is_csv:
+        # For CSV files, assume text/sentiment data
+        result = data_service.process_text_upload(content, file.filename)
+    else:
+        # For Excel files, peek at columns to determine type
+        try:
+            import pandas as pd
+            from io import BytesIO
+
+            df = pd.read_excel(BytesIO(content), nrows=1)
+            # If has 'content' column, it's sentiment data
+            if 'content' in df.columns:
+                result = data_service.process_text_upload(content, file.filename)
+            else:
+                # Use legacy categorical processor
+                result = data_service.process_upload(content, file.filename)
+        except Exception:
+            # Fallback to text upload for safety
+            result = data_service.process_text_upload(content, file.filename)
 
     if result.is_err():
         return JSONResponse(
@@ -200,6 +221,83 @@ async def get_data_info(
     description="Download a sample Excel file with the correct format for training data",
 )
 async def download_sample() -> StreamingResponse:
+    """Download sample Excel file for sentiment analysis training data.
+
+    Returns:
+        StreamingResponse with Excel file.
+    """
+    # Create sample data for sentiment analysis
+    sample_data = pd.DataFrame({
+        "content": [
+            "aplikasi sangat bagus dan membantu sekali",
+            "selalu error tidak bisa dibuka bos",
+            "mantap aplikasinya sangat berguna",
+            "jelek banget selalu crash terus",
+            "lumayan sih tapi masih banyak bug",
+            "sangat puas dengan pelayanannya",
+            "tolong diperbaiki lagi sering error",
+        ],
+        "score": [5, 1, 5, 1, 3, 5, 2],
+    })
+
+    # Create Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        sample_data.to_excel(writer, index=False, sheet_name="Data Training")
+
+        # Add format info sheet
+        format_info = pd.DataFrame({
+            "Kolom": ["content", "score"],
+            "Tipe Data": ["Text (String)", "Angka (1-5)"],
+            "Wajib": ["Ya", "Tidak (opsional)"],
+            "Keterangan": [
+                "Isi review/ulasan aplikasi",
+                "Rating 1-5 (4-5=Positif, 1-2=Negatif, 3=Netral/abaikan)"
+            ],
+        })
+        format_info.to_excel(writer, index=False, sheet_name="Format")
+
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=sample_data_training.xlsx"
+        },
+    )
+
+
+@router.delete(
+    "/delete",
+    summary="Delete training data",
+    description="Delete all training data files",
+)
+async def delete_data(
+    data_service: DataService,
+) -> JSONResponse:
+    """Delete training data files.
+
+    Args:
+        data_service: Data service instance.
+
+    Returns:
+        JSONResponse with deletion result.
+    """
+    result = data_service.delete_training_data()
+
+    if result.is_err():
+        return JSONResponse(
+            content=ApiResponse.error(message=result.error),
+            status_code=400,
+        )
+
+    return JSONResponse(
+        content=ApiResponse.success(
+            data=result.value,
+            message="Training data deleted successfully",
+        ),
+    )
     """Download sample Excel file for sentiment analysis training data.
 
     Returns:
