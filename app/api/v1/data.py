@@ -3,10 +3,13 @@
 Handles file upload, data conversion, and reading operations.
 """
 
+from io import BytesIO
+
 from typing import Annotated
 
+import pandas as pd
 from fastapi import APIRouter, Depends, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.schemas.data import DataConvertRequest
 from app.services.data_service import DataService
@@ -188,4 +191,57 @@ async def get_data_info(
             data=result.value,
             message="Dataset info retrieved successfully",
         ),
+    )
+
+
+@router.get(
+    "/sample",
+    summary="Download sample Excel file",
+    description="Download a sample Excel file with the correct format for training data",
+)
+async def download_sample() -> StreamingResponse:
+    """Download sample Excel file for sentiment analysis training data.
+
+    Returns:
+        StreamingResponse with Excel file.
+    """
+    # Create sample data for sentiment analysis
+    sample_data = pd.DataFrame({
+        "content": [
+            "aplikasi sangat bagus dan membantu sekali",
+            "selalu error tidak bisa dibuka bos",
+            "mantap aplikasinya sangat berguna",
+            "jelek banget selalu crash terus",
+            "lumayan sih tapi masih banyak bug",
+            "sangat puas dengan pelayanannya",
+            "tolong diperbaiki lagi sering error",
+        ],
+        "score": [5, 1, 5, 1, 3, 5, 2],
+    })
+
+    # Create Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        sample_data.to_excel(writer, index=False, sheet_name="Data Training")
+
+        # Add format info sheet
+        format_info = pd.DataFrame({
+            "Kolom": ["content", "score"],
+            "Tipe Data": ["Text (String)", "Angka (1-5)"],
+            "Wajib": ["Ya", "Tidak (opsional)"],
+            "Keterangan": [
+                "Isi review/ulasan aplikasi",
+                "Rating 1-5 (4-5=Positif, 1-2=Negatif, 3=Netral/abaikan)"
+            ],
+        })
+        format_info.to_excel(writer, index=False, sheet_name="Format")
+
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=sample_data_training.xlsx"
+        },
     )
